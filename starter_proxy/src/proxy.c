@@ -36,6 +36,7 @@ client *new_client(int client_fd, int is_server, size_t sibling_idx) {
     new->send_buf_size = INIT_BUF_SIZE;
     new->sibling_idx = sibling_idx;
     new->tv_size = 0;
+    new->bitrate_count = 0;
     return new;
 }
 
@@ -114,6 +115,24 @@ int find_maxfd(int listen_fd, client **clients) {
         }
     }
     return max_fd;
+}
+
+int sort_bit_rate(int bit_count, int* bit_rate)
+{
+    int i, j;
+    for(i=0;i<bit_count;i++)
+    {
+        for(j=i;j<bit_count;j++)
+        {
+            if(bit_rate[j]>bit_rate[i])
+            {
+                int tmp = bit_rate[i];
+                bit_rate[i] = bit_rate[j];
+                bit_rate[j] = tmp;
+            }
+        }
+    }
+
 }
 
 
@@ -294,11 +313,29 @@ int process_client_read(client **clients, size_t i, int data_available, fd_set *
             if(clients[sibling_idx]->is_f4m)
             {
                 //todo: process f4m file
-                clients[sibling_idx];
-                msg_rcvd;
-                msg_len;
-                printf("catch f4m\n%s\n", msg_rcvd);
-                clients[sibling_idx]->is_f4m = 0;
+                // clients[sibling_idx];
+                // msg_rcvd;
+                // msg_len;
+                char *offset_bitrate = memmem(msg_rcvd, msg_len, "bitrate", strlen("bitrate"));
+                char *offset_bootstrapInfoId = memmem(msg_rcvd, msg_len, "bootstrapInfoId"
+                    , strlen("bootstrapInfoId"));
+                while(offset_bitrate != NULL)
+                {
+                    int len = offset_bootstrapInfoId - offset_bitrate - strlen("bitrate") - 7;
+                    char* bitrate = malloc(sizeof(char)*len);
+                    memcpy(bitrate, offset_bitrate+strlen("bitrate")+2, len);
+                    clients[sibling_idx]->bit_rate[clients[sibling_idx]->bitrate_count] = atoi(bitrate);
+                    clients[sibling_idx]->bitrate_count++;
+                    offset_bitrate = memmem(offset_bootstrapInfoId
+                        , msg_len-(offset_bootstrapInfoId - msg_rcvd)
+                        , "bitrate"
+                        , strlen("bitrate"));
+                    offset_bootstrapInfoId = memmem(offset_bootstrapInfoId + strlen("bootstrapInfoId")
+                        , msg_len-(offset_bootstrapInfoId + strlen("bootstrapInfoId") - msg_rcvd)
+                        , "bootstrapInfoId"
+                        , strlen("bootstrapInfoId"));
+                }
+                sort_bit_rate(clients[sibling_idx]->bitrate_count, clients[sibling_idx]->bit_rate);
                 return 0;
             }
             char val[INIT_BUF_SIZE];

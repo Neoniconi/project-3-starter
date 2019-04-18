@@ -5,6 +5,7 @@
 #define EXTRA_URL_BUF 10
 #define BYTE_LEN 8
 #define MAX_CLIENTS FD_SETSIZE
+#define MAX_RATE_NUM 100
 
 struct client_struct
 {
@@ -20,6 +21,8 @@ struct client_struct
     size_t sibling_idx;
     struct timeval *start;
     int tv_size;//the number of timeval
+    int bit_rate[MAX_RATE_NUM];
+    int bitrate_count;
 };
 
 typedef struct client_struct client;
