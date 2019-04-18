@@ -456,7 +456,6 @@ int start_proxying() {
                     if (nread >= 0 && nready > 0) {
                         if (FD_ISSET(clients[i]->fd, &write_ready_set)) {
                             nready --;
-                            // log_info("%d",i);
                             int nsend = process_client_send(clients, i);
                             if (nsend < 0) {
                                 if (remove_client(clients, i, &read_set, &write_set) < 0) {

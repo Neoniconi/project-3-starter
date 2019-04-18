@@ -17,7 +17,7 @@ void log_set_file(FILE* fp)
 	LOG.fp = fp;
 }
 
-void log_log(const char* file, int line, const char* fmt, ...)
+void log_log(const char* fmt, ...)
 {
 	/*Get current time*/
 	time_t t = time(NULL);
@@ -26,9 +26,7 @@ void log_log(const char* file, int line, const char* fmt, ...)
 	if(LOG.fp)
 	{
 		va_list args;
-		char buf[32];
-		buf[strftime(buf, sizeof(buf),"%Y-%m-%d %H:%M:%S", lt)] = '\0';
-		fprintf(LOG.fp, "%s %s:%d: ", buf,file, line);
+		fprintf(LOG.fp, "<%u> ", (unsigned)time(NULL));
 		va_start(args, fmt);
 		vfprintf(LOG.fp, fmt, args);
 		va_end(args);
