@@ -481,14 +481,22 @@ int start_proxying() {
 int main(int argc, char *argv[]) {
     // start_proxying();
     printf("Starting the proxy...\n");
-    FILE *fp = fopen(argv[1], "r+");
-    if(fp==NULL)
+    if(argc == 7 || argc == 8)
     {
-        printf("%s\n", argv[1]);
-        printf("Unable to create log file\n");
-        exit(EXIT_FAILURE);
+        FILE *fp = fopen(argv[1], "w+");
+        if(fp==NULL)
+        {
+            printf("%s\n", argv[1]);
+            printf("Unable to create log file\n");
+            exit(EXIT_FAILURE);
+        }
+        log_set_file(fp);
+        start_proxying();
+        return 0;
     }
-    log_set_file(fp);
-    start_proxying();
+    else
+    {
+        printf("proxy <log> <alpha> <listen-port> <fake-ip> <dns-ip> <dns-port> [<www-ip>]\n");
+    }
     return 0;
 }
