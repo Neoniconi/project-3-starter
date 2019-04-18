@@ -194,8 +194,8 @@ int recv_from_client(client** clients, size_t i) {
  *  - appends data to the client's send buffer and returns the number of bytes appended
  *
 */
-int queue_message_send(client **clients, size_t i, char *buf) {
-    size_t n = strlen(buf);
+int queue_message_send(client **clients, size_t i, char *buf, int n) {
+    // size_t n = strlen(buf);
     size_t new_size;
 
     new_size = clients[i]->send_buf_size;
@@ -229,6 +229,7 @@ int queue_message_send(client **clients, size_t i, char *buf) {
 */
 int process_client_read(client **clients, size_t i, int data_available, fd_set *write_set) {
     char *msg_rcvd;
+    int msg_len;
     int nread;
     if (data_available == 1) {
         if ((nread = recv_from_client(clients, i)) < 0) {
@@ -240,13 +241,13 @@ int process_client_read(client **clients, size_t i, int data_available, fd_set *
         }
     }
     
-    if ((msg_rcvd = pop_message(&(clients[i]->recv_buf), &(clients[i]->recv_buf_len), &clients[i]->recv_buf_size)) == NULL) {
+    if ((msg_rcvd = pop_message(&(clients[i]->recv_buf), &(clients[i]->recv_buf_len), &clients[i]->recv_buf_size, &msg_len)) == NULL) {
         return 0;
     }
 
     else {
         int sibling_idx = clients[i]->sibling_idx;
-        int bytes_queued = queue_message_send(clients, sibling_idx, msg_rcvd);
+        int bytes_queued = queue_message_send(clients, sibling_idx, msg_rcvd, msg_len);
         FD_SET(clients[sibling_idx]->fd, write_set);
         return bytes_queued;
     }
@@ -262,8 +263,8 @@ int start_proxying() {
     size_t i;
 
     unsigned short listen_port = 8888;
-    char *server_ip = "127.0.0.1";
-    unsigned short server_port = 10000;
+    char *server_ip = "3.0.0.1";
+    unsigned short server_port = 8080;
     char *my_ip = "0.0.0.0";
 
     

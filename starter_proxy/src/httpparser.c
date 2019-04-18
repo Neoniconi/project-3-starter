@@ -146,7 +146,7 @@ int find_http_message_end(char* recv_buffer, size_t recv_buffer_len) {
  *  - returns a pointer to the reaped HTTP message, null if none present
  *  - adjusts the receive buffer and values appropriately
 */
-char *pop_message(char **recv_buffer, size_t *recv_buffer_len, size_t *recv_buffer_size) {
+char *pop_message(char **recv_buffer, size_t *recv_buffer_len, size_t *recv_buffer_size, int *msg_len) {
     char *message_received, *new_recv_buffer;
     int message_length, new_recv_buffer_len;
     int new_buffer_size;
@@ -154,6 +154,8 @@ char *pop_message(char **recv_buffer, size_t *recv_buffer_len, size_t *recv_buff
     message_length = find_http_message_end(*recv_buffer, *recv_buffer_len);
 
     if (message_length <= 0) return NULL;
+
+    *msg_len = message_length;
 
     message_received = calloc(message_length + 1, sizeof(char));
     memcpy(message_received, *recv_buffer, message_length);
