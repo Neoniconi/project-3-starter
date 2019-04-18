@@ -19,3 +19,6 @@ char *resize(char *buf, int new_len, int old_len);
 
 void *memmem(const void *haystack, size_t haystacklen,
                     const void *needle, size_t needlelen);
+
+int get_url(char *head, size_t head_len, char *url);
+int is_f4m(char *url);

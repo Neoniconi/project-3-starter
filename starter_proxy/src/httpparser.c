@@ -47,8 +47,61 @@ void *memmem(const void *haystack, size_t haystacklen,
     return NULL;
 }
 
+/*
+ *  @REQUIRES:
+ *  head: The header buffer
+ *  head_len: The length of the header buffer
+ *  url: The buffer to store the answer in
+ *  
+ *  @ENSURES: returns 0 if url not found, otherwise 1
+ *
+*/
+int get_url(char *head, size_t head_len, char *url){
+    char *string;
+    char *end;
+    if(head == NULL || url == NULL)
+    {
+        return 0;
+    }
 
+    string = memmem(head, head_len, "GET", strlen("GET"));
+    if(string == NULL){
+        return 0;
+    }
+    
+    string += 4;
+    size_t remaining_length = head_len - (string - head);
+    end = memmem(string, remaining_length, " ", 1);
 
+    if(end == NULL){
+        return 0;
+    }
+
+    memcpy(url, string, end-string);
+
+    return 1;
+}
+
+/*
+ *  @REQUIRES:
+ *  url: The url to detect
+ *  
+ *  @ENSURES: returns 1 if url is f4m, otherwise 0
+ *
+*/
+int is_f4m(char *url){
+    char *string;
+    if(url == NULL)
+    {
+        return 0;
+    }
+    string = memmem(url, strlen(url), "f4m", strlen("f4m"));
+    if(string == NULL || (string-url)+strlen("f4m") != strlen(url) )
+    {
+        return 0;
+    }
+    return 1;
+}
 
 /*
  *  @REQUIRES:
@@ -141,6 +194,7 @@ int find_http_message_end(char* recv_buffer, size_t recv_buffer_len) {
  *  recv_buffer: the pointer to the buffer you want to read from
  *  recv_buffer_len: The length of the  data in the receive buffer
  *  recv_buffer_size: The total size of the receive buffer
+ *  msg_len: the buffer to store the length of message
  *  
  *  @ENSURES: 
  *  - returns a pointer to the reaped HTTP message, null if none present

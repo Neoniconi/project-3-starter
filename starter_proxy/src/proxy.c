@@ -30,9 +30,12 @@ client *new_client(int client_fd, int is_server, size_t sibling_idx) {
     new->send_buf = calloc(INIT_BUF_SIZE, 1);
     new->recv_buf_len = 0;
     new->send_buf_len = 0;
+    new->is_server = is_server;
+    new->is_f4m = 0;
     new->recv_buf_size = INIT_BUF_SIZE;
     new->send_buf_size = INIT_BUF_SIZE;
     new->sibling_idx = sibling_idx;
+    new->tv_size = 0;
     return new;
 }
 
@@ -229,6 +232,7 @@ int queue_message_send(client **clients, size_t i, char *buf, int n) {
 */
 int process_client_read(client **clients, size_t i, int data_available, fd_set *write_set) {
     char *msg_rcvd;
+    char url[INIT_BUF_SIZE];
     int msg_len;
     int nread;
     if (data_available == 1) {
@@ -247,6 +251,82 @@ int process_client_read(client **clients, size_t i, int data_available, fd_set *
 
     else {
         int sibling_idx = clients[i]->sibling_idx;
+        //replace the f4m request
+        if(!clients[i]->is_server)//from client to server
+        {
+            struct timeval tv;
+            gettimeofday(&tv,NULL);
+            clients[i]->tv_size++;
+            clients[i]->start = realloc(clients[i]->start, sizeof(struct timeval) * clients[i]->tv_size);
+            clients[i]->start[clients[i]->tv_size-1] = tv;
+
+            memset(url, 0, INIT_BUF_SIZE);
+            if(get_url(msg_rcvd, msg_len, url))
+            {
+                printf("%s is f4m:%d\n", url, is_f4m(url));
+                if(is_f4m(url))
+                {
+                    clients[i]->is_f4m = 1;
+                    
+                    //generate nolist request
+                    char *no_list;
+                    no_list = malloc(msg_len + EXTRA_URL_BUF);
+                    char *offset = memmem(msg_rcvd, msg_len, ".f4m", strlen(".f4m"));
+                    int prefix = offset - msg_rcvd;
+                    memcpy(no_list, msg_rcvd, prefix);
+                    memcpy(no_list+strlen(no_list), "_nolist", strlen("_nolist"));
+                    memcpy(no_list+strlen(no_list), offset, msg_len-prefix);
+
+                    //append nolist request to original request
+                    msg_rcvd = realloc(msg_rcvd, 2*msg_len + EXTRA_URL_BUF);
+                    memcpy(msg_rcvd+msg_len, no_list, strlen(no_list));
+
+                    msg_len += strlen(no_list);
+
+                    printf("%s\n", msg_rcvd);
+
+                }
+            }
+            
+        }
+        else//from server to client
+        {
+            if(clients[sibling_idx]->is_f4m)
+            {
+                //todo: process f4m file
+                clients[sibling_idx];
+                msg_rcvd;
+                msg_len;
+                printf("catch f4m\n%s\n", msg_rcvd);
+                clients[sibling_idx]->is_f4m = 0;
+                return 0;
+            }
+            char val[INIT_BUF_SIZE];
+            get_header_val(msg_rcvd, msg_len, "Content-Length", strlen("Content-Length"), val);
+            int content_length = atoi(val);
+            printf("content:%d\n", content_length);
+
+            struct timeval tv;
+            gettimeofday(&tv,NULL);
+
+            struct timeval start = clients[sibling_idx]->start[0];
+            int sec_tv = tv.tv_sec - start.tv_sec;
+            int usec_tv = tv.tv_usec - start.tv_usec;
+            double sec = sec_tv + ((double)usec_tv)/1000000;
+            printf("sec:%lf,throughput:%lf\n", sec,content_length / sec );
+
+            clients[i]->tv_size--;
+            if(clients[i]->tv_size > 0)
+            {
+                memcpy(clients[i]->start, clients[i]->start+sizeof(struct timeval), sizeof(struct timeval) * clients[i]->tv_size);
+                clients[i]->start = realloc(clients[i]->start, sizeof(struct timeval) * clients[i]->tv_size);
+            }
+            else
+            {
+                free(clients[i]->start);
+            }
+        }
+        
         int bytes_queued = queue_message_send(clients, sibling_idx, msg_rcvd, msg_len);
         FD_SET(clients[sibling_idx]->fd, write_set);
         return bytes_queued;
