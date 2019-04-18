@@ -117,7 +117,7 @@ int find_maxfd(int listen_fd, client **clients) {
     return max_fd;
 }
 
-int sort_bit_rate(int bit_count, int* bit_rate)
+void sort_bit_rate(int bit_count, int* bit_rate)
 {
     int i, j;
     for(i=0;i<bit_count;i++)
@@ -455,6 +455,7 @@ int start_proxying() {
                     if (nread >= 0 && nready > 0) {
                         if (FD_ISSET(clients[i]->fd, &write_ready_set)) {
                             nready --;
+                            // log_info("%d",i);
                             int nsend = process_client_send(clients, i);
                             if (nsend < 0) {
                                 if (remove_client(clients, i, &read_set, &write_set) < 0) {
@@ -477,9 +478,17 @@ int start_proxying() {
 
 }
 
-int main() {
+int main(int argc, char *argv[]) {
     // start_proxying();
     printf("Starting the proxy...\n");
+    FILE *fp = fopen(argv[1], "r+");
+    if(fp==NULL)
+    {
+        printf("%s\n", argv[1]);
+        printf("Unable to create log file\n");
+        exit(EXIT_FAILURE);
+    }
+    log_set_file(fp);
     start_proxying();
     return 0;
 }

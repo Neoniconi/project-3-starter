@@ -1,5 +1,6 @@
 #include "httpparser.h"
 #include "customsocket.h"
+#include "log.h"
 
 #define INIT_BUF_SIZE 8192
 #define EXTRA_URL_BUF 10

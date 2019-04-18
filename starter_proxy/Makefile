@@ -7,10 +7,10 @@ SDIR=src
 
 LIBS=-lm
 
-_DEPS = proxy.h httpparser.h customsocket.h 
+_DEPS = proxy.h httpparser.h customsocket.h log.h
 DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
 
-_OBJ = proxy.o httpparser.o customsocket.o 
+_OBJ = proxy.o httpparser.o customsocket.o log.o
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
 
@@ -28,6 +28,9 @@ customsocket: $(OBJ)
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
 
 httpparser: $(OBJ)
+	$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
+
+log: $(OBJ)
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
 
 
