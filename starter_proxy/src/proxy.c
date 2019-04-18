@@ -336,6 +336,7 @@ int process_client_read(client **clients, size_t i, int data_available, fd_set *
                         , strlen("bootstrapInfoId"));
                 }
                 sort_bit_rate(clients[sibling_idx]->bitrate_count, clients[sibling_idx]->bit_rate);
+                clients[sibling_idx]->is_f4m = 0;
                 return 0;
             }
             char val[INIT_BUF_SIZE];
