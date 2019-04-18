@@ -24,6 +24,7 @@ struct client_struct
     int tv_size;//the number of timeval
     int bit_rate[MAX_RATE_NUM];
     int bitrate_count;
+    int throughput;
 };
 
 typedef struct client_struct client;

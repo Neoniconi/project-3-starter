@@ -13,6 +13,7 @@
 ********************************************************/
 #include "proxy.h"
 
+static double alpha;
 
 /*
  *  @REQUIRES:
@@ -37,6 +38,7 @@ client *new_client(int client_fd, int is_server, size_t sibling_idx) {
     new->sibling_idx = sibling_idx;
     new->tv_size = 0;
     new->bitrate_count = 0;
+    new->throughput = 0;
     return new;
 }
 
@@ -303,7 +305,11 @@ int process_client_read(client **clients, size_t i, int data_available, fd_set *
                     msg_len += strlen(no_list);
 
                     printf("%s\n", msg_rcvd);
-
+                }
+                else if(is_video(url))
+                {
+                    printf("video\n");
+                    printf("throughput:%d\n", clients[i]->throughput);
                 }
             }
             
@@ -312,6 +318,7 @@ int process_client_read(client **clients, size_t i, int data_available, fd_set *
         {
             if(clients[sibling_idx]->is_f4m)
             {
+                char bitrate[INIT_BUF_SIZE];
                 //todo: process f4m file
                 // clients[sibling_idx];
                 // msg_rcvd;
@@ -321,8 +328,8 @@ int process_client_read(client **clients, size_t i, int data_available, fd_set *
                     , strlen("bootstrapInfoId"));
                 while(offset_bitrate != NULL)
                 {
+                    memset(bitrate, 0, INIT_BUF_SIZE);
                     int len = offset_bootstrapInfoId - offset_bitrate - strlen("bitrate") - 7;
-                    char* bitrate = malloc(sizeof(char)*len);
                     memcpy(bitrate, offset_bitrate+strlen("bitrate")+2, len);
                     clients[sibling_idx]->bit_rate[clients[sibling_idx]->bitrate_count] = atoi(bitrate);
                     clients[sibling_idx]->bitrate_count++;
@@ -342,7 +349,7 @@ int process_client_read(client **clients, size_t i, int data_available, fd_set *
             char val[INIT_BUF_SIZE];
             get_header_val(msg_rcvd, msg_len, "Content-Length", strlen("Content-Length"), val);
             int content_length = atoi(val);
-            printf("content:%d\n", content_length);
+            printf("content-length:%d\n", content_length);
 
             struct timeval tv;
             gettimeofday(&tv,NULL);
@@ -351,21 +358,30 @@ int process_client_read(client **clients, size_t i, int data_available, fd_set *
             int sec_tv = tv.tv_sec - start.tv_sec;
             int usec_tv = tv.tv_usec - start.tv_usec;
             double sec = sec_tv + ((double)usec_tv)/1000000;
-            printf("sec:%lf,throughput:%lf\n", sec,content_length / sec );
+            int throughput = BYTE_LEN*content_length / sec;
+            int prev_throughput = clients[sibling_idx]->throughput;
+            clients[sibling_idx]->throughput =  throughput * alpha + (1-alpha)*prev_throughput;
 
-            clients[i]->tv_size--;
-            if(clients[i]->tv_size > 0)
+            printf("sec:%lf,this_throughput:%lf, new_throughput:%lf\n", 
+                    sec, throughput, clients[sibling_idx]->throughput);
+
+            clients[sibling_idx]->tv_size--;
+            if(clients[sibling_idx]->tv_size > 0)
             {
-                memcpy(clients[i]->start, clients[i]->start+sizeof(struct timeval), sizeof(struct timeval) * clients[i]->tv_size);
-                clients[i]->start = realloc(clients[i]->start, sizeof(struct timeval) * clients[i]->tv_size);
+                memcpy(clients[sibling_idx]->start, 
+                    clients[sibling_idx]->start+sizeof(struct timeval), 
+                    sizeof(struct timeval) * clients[sibling_idx]->tv_size);
+                clients[sibling_idx]->start = realloc(clients[sibling_idx]->start, 
+                    sizeof(struct timeval) * clients[sibling_idx]->tv_size);
             }
             else
             {
-                free(clients[i]->start);
+                free(clients[sibling_idx]->start);
             }
         }
         
         int bytes_queued = queue_message_send(clients, sibling_idx, msg_rcvd, msg_len);
+        printf("bytes queued:%d\n", bytes_queued);
         FD_SET(clients[sibling_idx]->fd, write_set);
         return bytes_queued;
     }
@@ -489,6 +505,7 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
     log_set_file(fp);
+    alpha = 0.7;
     start_proxying();
     return 0;
 }

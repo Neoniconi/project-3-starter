@@ -105,6 +105,33 @@ int is_f4m(char *url){
 
 /*
  *  @REQUIRES:
+ *  url: The url to detect
+ *  
+ *  @ENSURES: returns 1 if url is video, otherwise 0
+ *
+*/
+int is_video(char *url)
+{
+    char *string;
+    if(url == NULL)
+    {
+        return 0;
+    }
+    string = memmem(url, strlen(url), "Seg", strlen("Seg"));
+    if(string == NULL)
+    {
+        return 0;
+    }
+    string = memmem(url, strlen(url), "Frag", strlen("Frag"));
+    if(string == NULL)
+    {
+        return 0;
+    }
+    return 1;
+}
+
+/*
+ *  @REQUIRES:
  *  head: The header buffer
  *  head_len: The length of the header buffer
  *  key: The particular header you are looking for eg: Content-Length
