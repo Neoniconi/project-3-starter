@@ -495,9 +495,24 @@ int start_proxying() {
 }
 
 int main(int argc, char *argv[]) {
-    // start_proxying();
     printf("Starting the proxy...\n");
-    alpha = 0.7;
-    start_proxying();
+    if(argc == 7 || argc == 8)
+    {
+        FILE *fp = fopen(argv[1], "w+");
+        if(fp==NULL)
+        {
+            printf("%s\n", argv[1]);
+            printf("Unable to create log file\n");
+            exit(EXIT_FAILURE);
+        }
+        alpha = atoi(argv[2]);
+        log_set_file(fp);
+        start_proxying();
+        return 0;
+    }
+    else
+    {
+        printf("Wrong parameter format\n");
+    }
     return 0;
 }
