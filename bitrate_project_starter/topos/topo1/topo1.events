@@ -21,12 +21,18 @@
 # to make other event scripts for testing purposes, make them in separate files
 # and use the -e flag on netsim.py (run netsim.py -h for more info).
 
-0 link1 1mbit 0ms  # start link BW at 1 mbps
+0 link1 100kbit 0ms  # start link BW at 1 mbps
 20 link1 500kbit 0ms  # after 20 seconds, decrease to 500 kbps
 20 link1 250kbit 0ms  # starting at 40 seconds, alternate b/w 250 and 500
 5 link1 500kbit 0ms  # starting at 40 seconds, alternate b/w 250 and 500
 5 link1 250kbit 0ms
 5 link1 500kbit 0ms
+5 link1 250kbit 0ms
+5 link1 500kbit 0ms  
+5 link1 250kbit 0ms
+5 link1 500kbit 0ms
+5 link1 250kbit 0ms
+5 link1 100kbit 0ms
 5 link1 250kbit 0ms
 
 # continue with your own test scenarios...
