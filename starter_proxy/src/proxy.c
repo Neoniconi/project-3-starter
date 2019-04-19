@@ -287,7 +287,7 @@ int process_client_read(client **clients, size_t i, int data_available, fd_set *
             memset(url, 0, INIT_BUF_SIZE);
             if(get_url(msg_rcvd, msg_len, url))
             {
-                printf("%s is f4m:%d\n", url, is_f4m(url));
+                // printf("%s is f4m:%d\n", url, is_f4m(url));
                 if(is_f4m(url))
                 {
                     clients[i]->is_f4m = 1;
@@ -311,13 +311,13 @@ int process_client_read(client **clients, size_t i, int data_available, fd_set *
                 }
                 else if(is_video(url))
                 {
-                    printf("throughput:%d,bitrateCount:&d\n", clients[i]->throughput, clients[i]->bitrate_count);
+                    // printf("throughput:%d,bitrateCount:&d\n", clients[i]->throughput, clients[i]->bitrate_count);
                     int brate;
                     int j;
                     for(j = 0; j < clients[i]->bitrate_count; j++)
                     {
-                        printf("loop:%d\n", clients[i]->bit_rate[j]);
-                        if(clients[i]->throughput > clients[i]->bit_rate[j] * 1.5 * 1000 
+                        // printf("loop:%d\n", clients[i]->bit_rate[j]);
+                        if(clients[i]->throughput > clients[i]->bit_rate[j] * 1.5
                             || j == clients[i]->bitrate_count-1)
                         {
                             int new_len;
@@ -329,8 +329,8 @@ int process_client_read(client **clients, size_t i, int data_available, fd_set *
                             break;
                         }
                     }
-                    printf("end loop\n");
-                    printf("%s\n", msg_rcvd);
+                    // printf("end loop\n");
+                    
                     char* seg = memmem(msg_rcvd, msg_len, "Seg", strlen("Seg"));
                     char* end = memmem(seg, msg_len - (seg - msg_rcvd), " ", 1);
                     memset(clients[i]->chunkname_queue[clients[i]->count_req], 
@@ -379,7 +379,7 @@ int process_client_read(client **clients, size_t i, int data_available, fd_set *
             char val[INIT_BUF_SIZE];
             get_header_val(msg_rcvd, msg_len, "Content-Length", strlen("Content-Length"), val);
             int content_length = atoi(val);
-            printf("content-length:%d\n", content_length);
+            // printf("content-length:%d\n", content_length);
 
             struct timeval tv;
             gettimeofday(&tv,NULL);
@@ -391,6 +391,7 @@ int process_client_read(client **clients, size_t i, int data_available, fd_set *
             int usec_tv = tv.tv_usec - start.tv_usec;
             double sec = sec_tv + ((double)usec_tv)/1000000;
             int throughput = BYTE_LEN * content_length / sec;
+            throughput /= 1000; //convert to Kbps
             int prev_throughput = clients[sibling_idx]->throughput;
 
             clients[sibling_idx]->throughput =  throughput * alpha + (1-alpha)*prev_throughput;
@@ -409,38 +410,23 @@ int process_client_read(client **clients, size_t i, int data_available, fd_set *
             if(clients[sibling_idx]->count_res != clients[sibling_idx]->count_req 
                 && memmem(contentType, CONTENT_BUFFER_SIZE, "video", strlen("video")))
             {
-                printf("log!");
-                printf("brate:%d,", clients[sibling_idx]->bitrate_queue[clients[sibling_idx]->count_res]);
-                printf("chunk name:%s\n", clients[sibling_idx]->chunkname_queue[clients[sibling_idx]->count_res]);
+                // printf("log!");
+                // printf("brate:%d,", clients[sibling_idx]->bitrate_queue[clients[sibling_idx]->count_res]);
+                // printf("chunk name:%s\n", clients[sibling_idx]->chunkname_queue[clients[sibling_idx]->count_res]);
                 log_info("%lf %d %d %d %s %s", 
                     sec, throughput, clients[sibling_idx]->throughput, 
                     clients[sibling_idx]->bitrate_queue[clients[sibling_idx]->count_res], clientip, 
                     clients[sibling_idx]->chunkname_queue[clients[sibling_idx]->count_res]);
-                printf("log writen\n");
                 clients[sibling_idx]->count_res = (clients[sibling_idx]->count_res + 1) % CHUNK_NAME_BUF;
-                printf("log writen\n");
+                // printf("log writen\n");
             }
 
-            printf("sec:%lf,this_throughput:%d, new_throughput:%d\n", 
-                    sec, throughput, clients[sibling_idx]->throughput);
-
-            // clients[sibling_idx]->tv_size--;
-            // if(clients[sibling_idx]->tv_size > 0)
-            // {
-            //     memcpy(clients[sibling_idx]->start, 
-            //         clients[sibling_idx]->start+sizeof(struct timeval), 
-            //         sizeof(struct timeval) * clients[sibling_idx]->tv_size);
-            //     clients[sibling_idx]->start = realloc(clients[sibling_idx]->start, 
-            //         sizeof(struct timeval) * clients[sibling_idx]->tv_size);
-            // }
-            // else
-            // {
-            //     free(clients[sibling_idx]->start);
-            // }
+            // printf("sec:%lf,this_throughput:%d, new_throughput:%d\n", 
+            //         sec, throughput, clients[sibling_idx]->throughput);
         }
         
         int bytes_queued = queue_message_send(clients, sibling_idx, msg_rcvd, msg_len);
-        printf("bytes queued:%d\n", bytes_queued);
+        
         FD_SET(clients[sibling_idx]->fd, write_set);
         return bytes_queued;
     }
