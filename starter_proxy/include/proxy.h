@@ -21,7 +21,7 @@ struct client_struct
     size_t recv_buf_size;
     size_t send_buf_len;
     size_t send_buf_size;
-    size_t is_server;
+    int is_server;
     size_t sibling_idx;
     struct timeval start[CHUNK_NAME_BUF];
     int tv_req;//the number of timeval
