@@ -132,6 +132,43 @@ int is_video(char *url)
 
 /*
  *  @REQUIRES:
+ *  msg: msg url to detect
+ *  msg_len: the length of msg
+ *  bitrate: the bitrate to set
+ * 
+ *  @ENSURES: returns new pointer if success, otherwise NULL
+ *
+*/
+char *replace_bitrate(char *msg, int msg_len, int bitrate, int *new_len)
+{
+    if(msg == NULL) return NULL;
+    char *seg;
+    char *vod;
+    char bitrate_str[INIT_BUF_SIZE];
+    sprintf(bitrate_str, "%d", bitrate);
+    printf("replace with:%d\n", bitrate);
+    char *new_msg = malloc(msg_len + strlen(bitrate_str));
+    int offset = 0;
+    
+    seg = memmem(msg, msg_len, "Seg", strlen("Seg"));
+    vod = memmem(msg, msg_len, "vod", strlen("vod"));
+    vod = vod+4;
+
+    memcpy(new_msg, msg, vod - msg);
+    offset += vod - msg;
+    memcpy(new_msg + offset, bitrate_str, strlen(bitrate_str) );
+    offset += strlen(bitrate_str);
+    memcpy(new_msg + offset, seg, msg_len - (seg-msg));
+    offset += msg_len - (seg-msg);
+    *new_len = offset;
+
+    free(msg);
+
+    return new_msg;
+}
+
+/*
+ *  @REQUIRES:
  *  head: The header buffer
  *  head_len: The length of the header buffer
  *  key: The particular header you are looking for eg: Content-Length

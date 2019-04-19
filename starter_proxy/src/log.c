@@ -26,7 +26,7 @@ void log_log(const char* fmt, ...)
 	if(LOG.fp)
 	{
 		va_list args;
-		fprintf(LOG.fp, "<%u> ", (unsigned)time(NULL));
+		fprintf(LOG.fp, "%u ", (unsigned)time(NULL));
 		va_start(args, fmt);
 		vfprintf(LOG.fp, fmt, args);
 		va_end(args);

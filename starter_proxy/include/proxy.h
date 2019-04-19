@@ -25,6 +25,9 @@ struct client_struct
     int bit_rate[MAX_RATE_NUM];
     int bitrate_count;
     int throughput;
+    char **chunkname_queue;
+    int *bitrate_queue;
+    int count_trunk;
 };
 
 typedef struct client_struct client;

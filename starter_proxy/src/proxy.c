@@ -304,12 +304,32 @@ int process_client_read(client **clients, size_t i, int data_available, fd_set *
 
                     msg_len += strlen(no_list);
 
-                    printf("%s\n", msg_rcvd);
+                    // printf("%s\n", msg_rcvd);
                 }
                 else if(is_video(url))
                 {
-                    printf("video\n");
-                    printf("throughput:%d\n", clients[i]->throughput);
+                    printf("throughput:%d,bitrateCount:&d\n", clients[i]->throughput, clients[i]->bitrate_count);
+                    int j;
+                    for(j = 0; j < clients[i]->bitrate_count; j++)
+                    {
+                        printf("loop:%d\n", clients[i]->bit_rate[j]);
+                        if(clients[i]->throughput > clients[i]->bit_rate[j] * 1.5 * 1000 
+                            || j == clients[i]->bitrate_count-1)
+                        {
+                            int new_len;
+                            msg_rcvd = replace_bitrate(msg_rcvd, msg_len, clients[i]->bit_rate[j], &new_len);
+                            // msg_rcvd = replace_bitrate(msg_rcvd, msg_len, 500);
+                            msg_len = new_len;
+
+                            printf("bitrate:%d\n", clients[i]->bit_rate[j]);
+                            break;
+                        }
+                    }
+                    printf("end loop\n");
+                    printf("%s\n", msg_rcvd);
+                    clients[i]->chunkname_queue;
+                    clients[i]->count_trunk;
+                    
                 }
             }
             
@@ -358,11 +378,24 @@ int process_client_read(client **clients, size_t i, int data_available, fd_set *
             int sec_tv = tv.tv_sec - start.tv_sec;
             int usec_tv = tv.tv_usec - start.tv_usec;
             double sec = sec_tv + ((double)usec_tv)/1000000;
-            int throughput = BYTE_LEN*content_length / sec;
+            int throughput = BYTE_LEN * content_length / sec;
             int prev_throughput = clients[sibling_idx]->throughput;
+
             clients[sibling_idx]->throughput =  throughput * alpha + (1-alpha)*prev_throughput;
 
-            printf("sec:%lf,this_throughput:%lf, new_throughput:%lf\n", 
+            //get server ip
+            struct sockaddr_in addr;
+            socklen_t addr_size = sizeof(struct sockaddr_in);
+            int res = getpeername(clients[i]->fd, (struct sockaddr *)&addr, &addr_size);
+            char clientip[20];
+            strcpy(clientip, inet_ntoa(addr.sin_addr));
+
+
+            log_info("%lf %d %d %d %s %s", 
+                sec, throughput, clients[sibling_idx]->throughput, 
+                , clientip, );
+
+            printf("sec:%lf,this_throughput:%d, new_throughput:%d\n", 
                     sec, throughput, clients[sibling_idx]->throughput);
 
             clients[sibling_idx]->tv_size--;
@@ -399,7 +432,7 @@ int start_proxying() {
     unsigned short listen_port = 8888;
     char *server_ip = "3.0.0.1";
     unsigned short server_port = 8080;
-    char *my_ip = "0.0.0.0";
+    char *my_ip = "1.0.0.1";
 
     
 
@@ -464,6 +497,7 @@ int start_proxying() {
                     int nread = process_client_read(clients, i, data_available, &write_set);
 
                     if (nread < 0) {
+                        printf("read error: is server:%d\n", clients[i]->is_server);
                         if (remove_client(clients, i, &read_set, &write_set) < 0) {
                             fprintf(stderr, "start_proxying: Error removing client\n");
                         }
@@ -474,6 +508,7 @@ int start_proxying() {
                             nready --;
                             int nsend = process_client_send(clients, i);
                             if (nsend < 0) {
+                                printf("send error: is server:%d\n", clients[i]->is_server);
                                 if (remove_client(clients, i, &read_set, &write_set) < 0) {
                                     fprintf(stderr, "start_proxying: Error removing client\n");
                                 }
@@ -505,7 +540,7 @@ int main(int argc, char *argv[]) {
             printf("Unable to create log file\n");
             exit(EXIT_FAILURE);
         }
-        alpha = atoi(argv[2]);
+        alpha = atof(argv[2]);
         log_set_file(fp);
         start_proxying();
         return 0;

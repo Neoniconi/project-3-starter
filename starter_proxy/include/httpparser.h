@@ -23,3 +23,4 @@ void *memmem(const void *haystack, size_t haystacklen,
 int get_url(char *head, size_t head_len, char *url);
 int is_f4m(char *url);
 int is_video(char *url);
+char *replace_bitrate(char *msg, int msg_len, int bitrate, int *new_len);
