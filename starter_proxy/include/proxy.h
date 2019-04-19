@@ -37,4 +37,4 @@ struct client_struct
 
 typedef struct client_struct client;
 
-int start_proxying();
+int start_proxying(unsigned short listen_port, char* server_ip, char *my_ip);
