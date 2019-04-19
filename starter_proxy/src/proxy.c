@@ -36,9 +36,12 @@ client *new_client(int client_fd, int is_server, size_t sibling_idx) {
     new->recv_buf_size = INIT_BUF_SIZE;
     new->send_buf_size = INIT_BUF_SIZE;
     new->sibling_idx = sibling_idx;
-    new->tv_size = 0;
+    new->tv_req = 0;
+    new->tv_res = 0;
     new->bitrate_count = 0;
     new->throughput = 0;
+    new->count_res = 0;
+    new->count_req = 0;
     return new;
 }
 
@@ -277,9 +280,9 @@ int process_client_read(client **clients, size_t i, int data_available, fd_set *
         {
             struct timeval tv;
             gettimeofday(&tv,NULL);
-            clients[i]->tv_size++;
-            clients[i]->start = realloc(clients[i]->start, sizeof(struct timeval) * clients[i]->tv_size);
-            clients[i]->start[clients[i]->tv_size-1] = tv;
+
+            clients[i]->start[clients[i]->tv_req] = tv;
+            clients[i]->tv_req = (clients[i]->tv_req + 1)%CHUNK_NAME_BUF;
 
             memset(url, 0, INIT_BUF_SIZE);
             if(get_url(msg_rcvd, msg_len, url))
@@ -309,6 +312,7 @@ int process_client_read(client **clients, size_t i, int data_available, fd_set *
                 else if(is_video(url))
                 {
                     printf("throughput:%d,bitrateCount:&d\n", clients[i]->throughput, clients[i]->bitrate_count);
+                    int brate;
                     int j;
                     for(j = 0; j < clients[i]->bitrate_count; j++)
                     {
@@ -320,15 +324,21 @@ int process_client_read(client **clients, size_t i, int data_available, fd_set *
                             msg_rcvd = replace_bitrate(msg_rcvd, msg_len, clients[i]->bit_rate[j], &new_len);
                             // msg_rcvd = replace_bitrate(msg_rcvd, msg_len, 500);
                             msg_len = new_len;
-
+                            brate = clients[i]->bit_rate[j];
                             printf("bitrate:%d\n", clients[i]->bit_rate[j]);
                             break;
                         }
                     }
                     printf("end loop\n");
                     printf("%s\n", msg_rcvd);
-                    clients[i]->chunkname_queue;
-                    clients[i]->count_trunk;
+                    char* seg = memmem(msg_rcvd, msg_len, "Seg", strlen("Seg"));
+                    char* end = memmem(seg, msg_len - (seg - msg_rcvd), " ", 1);
+                    memset(clients[i]->chunkname_queue[clients[i]->count_req], 
+                            0, CHUNK_NAME_BUF);
+                    memcpy(clients[i]->chunkname_queue[clients[i]->count_req], 
+                            seg, end - seg);
+                    clients[i]->bitrate_queue[clients[i]->count_req] = brate;
+                    clients[i]->count_req = (clients[i]->count_req + 1)%CHUNK_NAME_BUF;
                     
                 }
             }
@@ -374,7 +384,9 @@ int process_client_read(client **clients, size_t i, int data_available, fd_set *
             struct timeval tv;
             gettimeofday(&tv,NULL);
 
-            struct timeval start = clients[sibling_idx]->start[0];
+            struct timeval start = clients[sibling_idx]->start[clients[sibling_idx]->tv_res];
+            clients[sibling_idx]->tv_res = (clients[sibling_idx]->tv_res+1) % CHUNK_NAME_BUF;
+
             int sec_tv = tv.tv_sec - start.tv_sec;
             int usec_tv = tv.tv_usec - start.tv_usec;
             double sec = sec_tv + ((double)usec_tv)/1000000;
@@ -387,30 +399,44 @@ int process_client_read(client **clients, size_t i, int data_available, fd_set *
             struct sockaddr_in addr;
             socklen_t addr_size = sizeof(struct sockaddr_in);
             int res = getpeername(clients[i]->fd, (struct sockaddr *)&addr, &addr_size);
-            char clientip[20];
+            char clientip[IP_LENGTH];
             strcpy(clientip, inet_ntoa(addr.sin_addr));
 
+            char contentType[CONTENT_BUFFER_SIZE];
+            get_header_val(msg_rcvd, msg_len, 
+                "Content-Type", strlen("Content-Type"), contentType);
 
-            log_info("%lf %d %d %d %s %s", 
-                sec, throughput, clients[sibling_idx]->throughput, 
-                , clientip, );
+            if(clients[sibling_idx]->count_res != clients[sibling_idx]->count_req 
+                && memmem(contentType, CONTENT_BUFFER_SIZE, "video", strlen("video")))
+            {
+                printf("log!");
+                printf("brate:%d,", clients[sibling_idx]->bitrate_queue[clients[sibling_idx]->count_res]);
+                printf("chunk name:%s\n", clients[sibling_idx]->chunkname_queue[clients[sibling_idx]->count_res]);
+                log_info("%lf %d %d %d %s %s", 
+                    sec, throughput, clients[sibling_idx]->throughput, 
+                    clients[sibling_idx]->bitrate_queue[clients[sibling_idx]->count_res], clientip, 
+                    clients[sibling_idx]->chunkname_queue[clients[sibling_idx]->count_res]);
+                printf("log writen\n");
+                clients[sibling_idx]->count_res = (clients[sibling_idx]->count_res + 1) % CHUNK_NAME_BUF;
+                printf("log writen\n");
+            }
 
             printf("sec:%lf,this_throughput:%d, new_throughput:%d\n", 
                     sec, throughput, clients[sibling_idx]->throughput);
 
-            clients[sibling_idx]->tv_size--;
-            if(clients[sibling_idx]->tv_size > 0)
-            {
-                memcpy(clients[sibling_idx]->start, 
-                    clients[sibling_idx]->start+sizeof(struct timeval), 
-                    sizeof(struct timeval) * clients[sibling_idx]->tv_size);
-                clients[sibling_idx]->start = realloc(clients[sibling_idx]->start, 
-                    sizeof(struct timeval) * clients[sibling_idx]->tv_size);
-            }
-            else
-            {
-                free(clients[sibling_idx]->start);
-            }
+            // clients[sibling_idx]->tv_size--;
+            // if(clients[sibling_idx]->tv_size > 0)
+            // {
+            //     memcpy(clients[sibling_idx]->start, 
+            //         clients[sibling_idx]->start+sizeof(struct timeval), 
+            //         sizeof(struct timeval) * clients[sibling_idx]->tv_size);
+            //     clients[sibling_idx]->start = realloc(clients[sibling_idx]->start, 
+            //         sizeof(struct timeval) * clients[sibling_idx]->tv_size);
+            // }
+            // else
+            // {
+            //     free(clients[sibling_idx]->start);
+            // }
         }
         
         int bytes_queued = queue_message_send(clients, sibling_idx, msg_rcvd, msg_len);

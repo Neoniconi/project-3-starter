@@ -20,13 +20,13 @@ void log_set_file(FILE* fp)
 void log_log(const char* fmt, ...)
 {
 	/*Get current time*/
-	time_t t = time(NULL);
-	struct tm *lt = localtime(&t);
+	time_t seconds;
+   	seconds = time(NULL);
 
 	if(LOG.fp)
 	{
 		va_list args;
-		fprintf(LOG.fp, "%u ", (unsigned)time(NULL));
+		fprintf(LOG.fp, "%ld ", seconds);
 		va_start(args, fmt);
 		vfprintf(LOG.fp, fmt, args);
 		va_end(args);

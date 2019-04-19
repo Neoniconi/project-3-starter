@@ -4,6 +4,9 @@
 
 #define INIT_BUF_SIZE 8192
 #define EXTRA_URL_BUF 10
+#define CHUNK_NAME_BUF 50
+#define IP_LENGTH 20
+#define CONTENT_BUFFER_SIZE 20
 #define BYTE_LEN 8
 #define MAX_CLIENTS FD_SETSIZE
 #define MAX_RATE_NUM 100
@@ -20,14 +23,16 @@ struct client_struct
     size_t send_buf_size;
     size_t is_server;
     size_t sibling_idx;
-    struct timeval *start;
-    int tv_size;//the number of timeval
+    struct timeval start[CHUNK_NAME_BUF];
+    int tv_req;//the number of timeval
+    int tv_res;
     int bit_rate[MAX_RATE_NUM];
     int bitrate_count;
     int throughput;
-    char **chunkname_queue;
-    int *bitrate_queue;
-    int count_trunk;
+    char chunkname_queue[CHUNK_NAME_BUF][CHUNK_NAME_BUF];
+    int bitrate_queue[CHUNK_NAME_BUF];
+    int count_req;
+    int count_res;
 };
 
 typedef struct client_struct client;
