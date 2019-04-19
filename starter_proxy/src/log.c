@@ -20,8 +20,8 @@ void log_set_file(FILE* fp)
 void log_log(const char* fmt, ...)
 {
 	/*Get current time*/
-	time_t t = time(NULL);
-	struct tm *lt = localtime(&t);
+	// time_t t = time(NULL);
+	// struct tm *lt = localtime(&t);
 
 	if(LOG.fp)
 	{

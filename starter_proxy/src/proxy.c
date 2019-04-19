@@ -391,9 +391,9 @@ int process_client_read(client **clients, size_t i, int data_available, fd_set *
             strcpy(clientip, inet_ntoa(addr.sin_addr));
 
 
-            log_info("%lf %d %d %d %s %s", 
-                sec, throughput, clients[sibling_idx]->throughput, 
-                , clientip, );
+            // log_info("%lf %d %d %d %s %s", 
+            //     sec, throughput, clients[sibling_idx]->throughput, 
+            //     , clientip, );
 
             printf("sec:%lf,this_throughput:%d, new_throughput:%d\n", 
                     sec, throughput, clients[sibling_idx]->throughput);
@@ -421,7 +421,7 @@ int process_client_read(client **clients, size_t i, int data_available, fd_set *
 
 }
 
-int start_proxying() {
+int start_proxying(unsigned short listen_port, char* server_ip, char *my_ip) {
     int max_fd, nready, listen_fd;
     fd_set read_set, read_ready_set, write_set, write_ready_set;
     struct sockaddr_in cli_addr;
@@ -429,11 +429,8 @@ int start_proxying() {
     client **clients;
     size_t i;
 
-    unsigned short listen_port = 8888;
-    char *server_ip = "3.0.0.1";
-    unsigned short server_port = 8080;
-    char *my_ip = "1.0.0.1";
 
+    unsigned short server_port = 8080;
     
 
 
@@ -542,7 +539,14 @@ int main(int argc, char *argv[]) {
         }
         alpha = atof(argv[2]);
         log_set_file(fp);
-        start_proxying();
+
+        unsigned short listen_port = atoi(argv[3]);
+        char* server_ip;
+        unsigned short server_port;
+        if(argc==8)
+        {
+            start_proxying(listen_port, argv[7], argv[4]);
+        }
         return 0;
     }
     else
