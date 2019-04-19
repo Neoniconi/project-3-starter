@@ -325,7 +325,7 @@ int process_client_read(client **clients, size_t i, int data_available, fd_set *
                             // msg_rcvd = replace_bitrate(msg_rcvd, msg_len, 500);
                             msg_len = new_len;
                             brate = clients[i]->bit_rate[j];
-                            printf("bitrate:%d\n", clients[i]->bit_rate[j]);
+                            // printf("bitrate:%d\n", clients[i]->bit_rate[j]);
                             break;
                         }
                     }

@@ -146,7 +146,7 @@ char *replace_bitrate(char *msg, int msg_len, int bitrate, int *new_len)
     char *vod;
     char bitrate_str[INIT_BUF_SIZE];
     sprintf(bitrate_str, "%d", bitrate);
-    printf("replace with:%d\n", bitrate);
+    // printf("replace with:%d\n", bitrate);
     char *new_msg = malloc(msg_len + strlen(bitrate_str));
     int offset = 0;
     
