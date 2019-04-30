@@ -13,13 +13,16 @@ DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
 _OBJ = proxy.o httpparser.o customsocket.o log.o
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
+_nOBJ = nameserver.o log.o
+nOBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
-BINS = proxy
+
+BINS = proxy nameserver
 
 $(ODIR)/%.o: $(SDIR)/%.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
-all: proxy
+all: proxy nameserver
 
 proxy: $(OBJ)
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
@@ -33,6 +36,9 @@ httpparser: $(OBJ)
 log: $(OBJ)
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
 
+nameserver: $(nOBJ)
+	$(CC) -c -o build/nameserver.o src/nameserver.c $(CFLAGS)
+	$(CC) -o nameserver build/nameserver.o build/log.o $(CFLAGS) $(LIBS)
 
 .PHONY: clean
 
