@@ -477,19 +477,18 @@ int resolve(const char *node, const char *service,
     }
     int i;
     char* ip;
-    res = malloc(sizeof(void*) * ancount);
-    for(i=0;i<ancount;i++)
-    {
-        ip = get_ip(buffer, 0);
-        res[i] = (struct addrinfo*)malloc(sizeof(struct addrinfo));
-        res[i]->ai_socktype = SOCK_DGRAM;
-        res[i]->ai_protocol = IPPROTO_UDP;
-        res[i]->ai_family = PF_INET;
-        res[i]->ai_addr->sa_family = AF_INET;
-        unsigned short port = htons(atoi(service));
-        memcpy(res[i]->ai_addr->sa_data, &port, 2);
-        memcpy(res[i]->ai_addr->sa_data+2, ip, 4);
-    }
+
+    ip = get_ip(buffer, 0);
+    *res = (struct addrinfo*)malloc(sizeof(struct addrinfo));
+    (*res)->ai_socktype = SOCK_DGRAM;
+    (*res)->ai_protocol = IPPROTO_UDP;
+    (*res)->ai_family = PF_INET;
+    (*res)->ai_addr = malloc(sizeof(struct sockaddr));
+    (*res)->ai_addr->sa_family = AF_INET;
+    unsigned short port = htons(atoi(service));
+    memcpy((*res)->ai_addr->sa_data, &port, 2);
+    memcpy((*res)->ai_addr->sa_data+2, ip, 4);
+
     return 0;
 
 }
@@ -511,16 +510,18 @@ int start_proxying(unsigned short listen_port, char* server_ip, char *my_ip) {
 
     //for testing
 
-    char ans_ip[IP_LENGTH];
+    // char ans_ip[IP_LENGTH];
 
-    struct addrinfo** res;
-    resolve(DEFAULT_DOMAIN_NAME, server_port_char, NULL, res);
+    // struct addrinfo* res;
+    // resolve(DEFAULT_DOMAIN_NAME, server_port_char, NULL, &res);
+    // printf("after resolve\n");
     
-    struct sockaddr_in* server_addr;
-    server_addr = (struct sockaddr_in *)res[0];
-    inet_ntop(AF_INET, &(server_addr->sin_addr), ans_ip, INET_ADDRSTRLEN);
+    // struct sockaddr_in* server_addr;
+    // server_addr = (struct sockaddr_in *)(res->ai_addr);
+    // printf("after addr\n");
+    // inet_ntop(AF_INET, &(server_addr->sin_addr), ans_ip, INET_ADDRSTRLEN);
 
-    printf("%s\n", ans_ip);
+    // printf("%s\n", ans_ip);
 
 
     /////////////////
@@ -572,14 +573,15 @@ int start_proxying(unsigned short listen_port, char* server_ip, char *my_ip) {
                     {
                         char ans_ip[IP_LENGTH];
 
-                        struct addrinfo** res;
-                        resolve(DEFAULT_DOMAIN_NAME, server_port_char, NULL, res);
+                        struct addrinfo* res;
+                        resolve(DEFAULT_DOMAIN_NAME, server_port_char, NULL, &res);
                         
                         struct sockaddr_in* server_addr;
-                        server_addr = (struct sockaddr_in *)res[0];
+                        server_addr = (struct sockaddr_in *)(res->ai_addr);
+                        
                         inet_ntop(AF_INET, &(server_addr->sin_addr), ans_ip, INET_ADDRSTRLEN);
 
-                        printf("%s\n", ans_ip);
+                        sibling_fd = open_socket_to_server(my_ip, ans_ip, server_port);
                     }
                     
                     
