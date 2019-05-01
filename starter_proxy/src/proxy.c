@@ -12,9 +12,12 @@
 *              to send such mail to trash :)           *
 ********************************************************/
 #include "proxy.h"
+#include "dns_packet.h"
+
+
 
 static double alpha;
-
+static int dns_socket;
 /*
  *  @REQUIRES:
  *  client_fd: The fd of the client you want to add
@@ -433,6 +436,63 @@ int process_client_read(client **clients, size_t i, int data_available, fd_set *
 
 }
 
+int init_mydns(const char *dns_ip, unsigned int dns_port)
+{
+    struct sockaddr_in servaddr;
+    bzero(&servaddr, sizeof(servaddr)); 
+    servaddr.sin_addr.s_addr = inet_addr(dns_ip); 
+    servaddr.sin_port = htons(dns_port); 
+    servaddr.sin_family = AF_INET; 
+
+    dns_socket = socket(AF_INET, SOCK_DGRAM, 0);
+
+    if(connect(dns_socket, (struct sockaddr *)&servaddr, 
+        sizeof(servaddr)) < 0)
+    {
+        return -1;
+    }
+    return 0;
+
+}
+
+int resolve(const char *node, const char *service, 
+            const struct addrinfo *hints, struct addrinfo **res)
+{
+    uint16_t identifier = rand()%MAX_16_UINT;
+    uint16_t qrcount = 1;
+    uint16_t ancount = 0;
+    dns_packet_t* packet = create_dns_packet(identifier
+                        , QUERY_MASK, AA_QUERY_MASK
+                        , qrcount, ancount, RCODE_NO_ERROR);
+    add_dns_question(packet, (char*)node, QTYPE_A, QCLASS_IP, 0);
+    char* buf = create_dns_packet_buf(packet);
+    sendto(dns_socket, buf, get_pkt_len(packet), 0, (struct sockaddr*)NULL, sizeof(struct sockaddr_in)); 
+
+    char buffer[DNS_PACKET_SZ];
+    recvfrom(dns_socket, buffer, sizeof(buffer), 0, (struct sockaddr*)NULL, NULL);
+    ancount = get_ancount(buffer);
+    if(ancount == 0)
+    {
+        return -1;
+    }
+    int i;
+    char* ip;
+    for(i=0;i<ancount;i++)
+    {
+        ip = get_ip(buffer, 0);
+        res[i]->ai_socktype = SOCK_DGRAM;
+        res[i]->ai_protocol = IPPROTO_UDP;
+        res[i]->ai_family = PF_INET;
+        res[i]->ai_addr->sa_family = AF_INET;
+        unsigned short port = htons(atoi(service));
+        memcpy(res[i]->ai_addr->sa_data, &port, 2);
+        memcpy(res[i]->ai_addr->sa_data+2, ip, 4);
+    }
+    return 0;
+
+}
+
+
 int start_proxying(unsigned short listen_port, char* server_ip, char *my_ip) {
     int max_fd, nready, listen_fd;
     fd_set read_set, read_ready_set, write_set, write_ready_set;
@@ -551,10 +611,10 @@ int main(int argc, char *argv[]) {
         }
         alpha = atof(argv[2]);
         log_set_file(fp);
-
         unsigned short listen_port = atoi(argv[3]);
         char* server_ip;
         unsigned short server_port;
+        init_mydns(argv[5], atoi(argv[6]));
         if(argc==8)
         {
             start_proxying(listen_port, argv[7], argv[4]);

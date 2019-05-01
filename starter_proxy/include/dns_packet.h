@@ -5,7 +5,7 @@
 *               header                                 *
 ********************************************************/
 
-#ifdef _DNS_PACKET_H
+#ifndef _DNS_PACKET_H
 #define _DNS_PACKET_H
 
 #include <netinet/in.h>
@@ -75,8 +75,8 @@ typedef struct
 
 typedef struct 
 {
-	char* q_name;		//2byte
-	uint16_t q_type;		//2bype
+	char* q_name;		    
+	uint16_t q_type;		//2byte
 	uint16_t q_class;		//2byte
 	
 }query_t;
@@ -84,11 +84,11 @@ typedef struct
 typedef struct 
 {
 	char* name;
-	uint16_t type;
-	uint16_t class_name;
-	uint16_t ttl;
-	uint16_t rdlength;
-	char* rdata;
+	uint16_t type;			//2byte
+	uint16_t class_name;	//2byte
+	uint16_t ttl;			//2byte
+	uint16_t rdlength;		//2byte
+	char* rdata;			
 
 }answer_t;
 
@@ -125,13 +125,15 @@ uint16_t get_ancount(char* msg);
 uint16_t get_qrcode(char* msg);
 uint16_t get_answer_offset(char* msg);
 uint16_t get_identifier(char* msg);
+char* str_to_dnsname(char* domain);
+
+int get_pkt_len(dns_packet_t* packet);
 
 char* get_domain(char* msg, uint16_t index);
 char* get_ip(char* msg, int index);
 
 void free_packet(dns_packet_t* packet);
 
-char* str_to_dnsname(char* domain)；
 
 #endif
 

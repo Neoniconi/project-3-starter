@@ -1,6 +1,8 @@
 #include "httpparser.h"
 #include "customsocket.h"
 #include "log.h"
+#include "mydns.h"
+#include "dns_packet.h"
 
 #define INIT_BUF_SIZE 8192
 #define EXTRA_URL_BUF 10
@@ -10,6 +12,8 @@
 #define BYTE_LEN 8
 #define MAX_CLIENTS FD_SETSIZE
 #define MAX_RATE_NUM 100
+
+#define MAX_16_UINT 0xffff
 
 struct client_struct
 {

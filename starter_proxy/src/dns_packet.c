@@ -185,20 +185,9 @@ void add_dns_answer(dns_packet_t* packet, char* name, uint16_t a_type, uint16_t 
 
 char* create_dns_packet_buf(dns_packet_t* packet)
 {
-	uint32_t data_len = 0;
 	int i;
 	int index = 0;
-	for(i=0;i<packet->header.qd_count;i++)
-	{
-		data_len += strlen(packet->query_list[i]->q_name) + 2*SIZE_16;
-	}
-	for(i=0;i<packet->header.an_count;i++)
-	{
-		data_len += strlen(packet->answer_list[i]->name) + 4*SIZE_16
-		+ packet->answer_list[i]->rdlength;
-	}
-	data_len += HEADER_LEN;
-
+	int data_len = get_pkt_len(packet);
 	char* msg = malloc(data_len*sizeof(char));
 	set_dns_headers(msg, packet->header.identifier, packet->header.flags
 		, packet->header.qd_count, packet->header.an_count);
@@ -218,6 +207,24 @@ char* create_dns_packet_buf(dns_packet_t* packet)
 	return msg;
 }
 
+int get_pkt_len(dns_packet_t* packet)
+{
+	uint32_t data_len = 0;
+	int i;
+	int index = 0;
+	for(i=0;i<packet->header.qd_count;i++)
+	{
+		data_len += strlen(packet->query_list[i]->q_name) + 2*SIZE_16;
+	}
+	for(i=0;i<packet->header.an_count;i++)
+	{
+		data_len += strlen(packet->answer_list[i]->name) + 4*SIZE_16
+		+ packet->answer_list[i]->rdlength;
+	}
+	data_len += HEADER_LEN;
+	return data_len;
+
+}
 
 uint16_t get_qdcount(char* msg)
 {
