@@ -69,6 +69,26 @@ int calc_dijkstra(int graph[][GRAPH_SIZE], int n, int start, int* servers)
     return min_node;
 }
 
+int ip_to_answer_format(char* ip, char* ans)
+{
+    int i,j,index;
+    char buf[SIZE_32];
+    index = 0;
+    for(i=0, j=0; ip[i]!=0; i++)
+    {
+        if(ip[i] == '.')
+        {
+            memcpy(buf, ip+j, i-j);
+            ans[index] = atoi(buf);
+            index++;
+            j = i+1;
+        }
+    }
+    memcpy(buf, ip+j, i-j);
+    ans[index] = atoi(buf);
+    return 1;
+}
+
 
 int start_nameserver(int dijkstra, char *my_ip, unsigned short listen_port, 
             char** servers, int servers_len, int lsa_graph[][GRAPH_SIZE], int hosts_len, char** hosts) 
@@ -131,15 +151,32 @@ int start_nameserver(int dijkstra, char *my_ip, unsigned short listen_port,
                 len = sizeof(cli_addr); 
                 int n = recvfrom(listen_fd, recv_buffer, sizeof(recv_buffer), 
                         0, (struct sockaddr*)&cli_addr, &cli_size); //receive message from server
-                
+
+                char *domain_name = get_domain(recv_buffer, 0);
+                uint16_t identifier = get_identifier(recv_buffer);
+                uint16_t qdcount = get_qdcount(recv_buffer);
                 char *cli_ip = inet_ntoa(cli_addr.sin_addr);
+                char answer_ip[SIZE_32];
+                memset(answer_ip, 0, SIZE_32);
+
                 if(!dijkstra)
                 {
-                    send_len = strlen(servers[round]);
-                    memcpy(send_buffer, servers[round], send_len);
-                    round = (round+1) % servers_len;
+                    ip_to_answer_format(servers[round], answer_ip);
+                    dns_packet_t* packet = create_dns_packet(identifier, 
+                        RESPONSE_MASK, AA_RESPONSE_MASK, qdcount, 1, RCODE_NO_ERROR);
+                    add_dns_question(packet, domain_name, QTYPE_A, QCLASS_IP, 0);
+                    add_dns_answer(packet, domain_name, ATYPE_A, ACLASS_IP, TTL_DEFAULT, SIZE_32, answer_ip, 0);
+                    
+                    char* buf = create_dns_packet_buf(packet);
+                    send_len = get_pkt_len(packet);
+                    memcpy(send_buffer, buf, send_len);
+                    free(buf);
+
+                    // send_len = strlen(servers[round]);
+                    // memcpy(send_buffer, servers[round], send_len);
                     log_info("%s %s %s", 
-                            cli_ip, "query.name", hosts[index]);
+                            cli_ip, domain_name, servers[round]);
+                    round = (round+1) % servers_len;
                 }
                 else //Dijkstra
                 {
@@ -152,7 +189,19 @@ int start_nameserver(int dijkstra, char *my_ip, unsigned short listen_port,
                         send_len = strlen(hosts[index]);
                         memcpy(send_buffer, hosts[index], send_len);
                         log_info("%s %s %s", 
-                            cli_ip, "query.name", hosts[index]);
+                            cli_ip, domain_name, hosts[index]);
+
+
+                        ip_to_answer_format(hosts[index], answer_ip);
+                        dns_packet_t* packet = create_dns_packet(identifier, 
+                            RESPONSE_MASK, AA_RESPONSE_MASK, qdcount, 1, RCODE_NO_ERROR);
+                        add_dns_question(packet, domain_name, QTYPE_A, QCLASS_IP, 0);
+                        add_dns_answer(packet, domain_name, ATYPE_A, ACLASS_IP, TTL_DEFAULT, SIZE_32, answer_ip, 0);
+
+                        char* buf = create_dns_packet_buf(packet);
+                        send_len = get_pkt_len(packet);
+                        memcpy(send_buffer, buf, send_len);
+                        free(buf);
                     }
                     else
                     {
