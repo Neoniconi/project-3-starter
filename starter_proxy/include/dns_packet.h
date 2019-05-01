@@ -61,6 +61,8 @@
 #define HEADER_LEN 12
 #define MAX_DOMAIN_LEN 256
 
+#define DEFAULT_RR_NAME 0xc00c
+
 
 
 typedef struct 

@@ -116,7 +116,10 @@ answer_t* create_dns_answer(char* name, uint16_t a_type, uint16_t a_class,
 				uint16_t ttl, uint16_t length, char* data)
 {
 	answer_t* a = malloc(sizeof(answer_t));
-	a->name = str_to_dnsname(name);
+	uint16_t rr_name = DEFAULT_RR_NAME;
+	a->name = malloc(SIZE_16);
+	memcpy(a->name, &rr_name, SIZE_16);
+	// printf("%x\n", a->name[0]);
 	a->type = a_type;
 	a->class_name = a_class;
 	a->ttl = ttl;
@@ -131,7 +134,10 @@ void set_dns_answer(char* msg, answer_t* answer)
 {
 	uint16_t tmp;
 	int index = 0;
-	memcpy(msg, answer->name, strlen(answer->name));
+	memcpy(&tmp, answer->name, SIZE_16);
+	// printf("TMP: %x\n", tmp);
+	tmp = htons(tmp);
+	memcpy(msg, &tmp, SIZE_16);
 	index+=strlen(answer->name);
 	tmp = htons(answer->type);
 	memcpy(msg+index, &tmp, SIZE_16);
@@ -209,7 +215,7 @@ char* create_dns_packet_buf(dns_packet_t* packet)
 
 int get_pkt_len(dns_packet_t* packet)
 {
-	uint32_t data_len = 0;
+	int data_len = 0;
 	int i;
 	int index = 0;
 	for(i=0;i<packet->header.qd_count;i++)
@@ -218,7 +224,7 @@ int get_pkt_len(dns_packet_t* packet)
 	}
 	for(i=0;i<packet->header.an_count;i++)
 	{
-		data_len += strlen(packet->answer_list[i]->name) + 4*SIZE_16
+		data_len += SIZE_16 + 4*SIZE_16
 		+ packet->answer_list[i]->rdlength;
 	}
 	data_len += HEADER_LEN;
@@ -319,12 +325,8 @@ char* get_ip(char* msg, int index)
 	{
 		while(current<=index)
 		{
-			while(msg[offset]!=0)
-			{
-				offset += msg[offset]+1;
-
-			}
-			offset += 8;
+			offset += SIZE_16;
+			offset += 4*SIZE_16;
 			if(current == index)
 			{
 				memcpy(ip, msg+offset, 4);
@@ -351,8 +353,8 @@ char* get_ip(char* msg, int index)
 // 	ip[1] = 2;
 // 	ip[2] = 3;
 // 	ip[3] = 4;
-// 	add_dns_answer(packet, "domain.com", 1,1,0,4,ip,0);
-// 	add_dns_answer(packet, "domain.com", 1,1,0,4,ip,1);
+// 	add_dns_answer(packet, "domain.commmmm", 1,1,0,4,ip,0);
+// 	add_dns_answer(packet, "domain.commmmm", 1,1,0,4,ip,1);
 
 // 	char* buf = create_dns_packet_buf(packet);
 // 	int qdcount = get_qdcount(buf);
