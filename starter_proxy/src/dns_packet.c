@@ -1,3 +1,12 @@
+/********************************************************
+*  Author: Jingze Shi, Yiting Wang                     *
+*  Email: jingzes@cmu.edu yitingw@cmu.edu              *
+*  Description: This code defines the DNS packet       *
+*               Review DNS protocol format for         *
+*				more information.                      *
+*  			    https://tools.ietf.org/html/rfc1035    *
+********************************************************/
+
 #include "dns_packet.h"
 
 /*
@@ -518,9 +527,30 @@ char* get_ip(char* msg, int index)
 	return ip;
 }
 
+/*
+ * Param: packet - the packet to free data from
+ *
+ * Purpose: To cleanup state preserved in the packet
+ *
+ */
 
 void free_packet(dns_packet_t* packet)
 {
+	int data_len = 0;
+	int i;
+	int index = 0;
+	for(i=0;i<packet->header.qd_count;i++)
+	{
+		free(packet->query_list[i]->q_name);
+		free(packet->query_list[i]);
+	}
+	for(i=0;i<packet->header.an_count;i++)
+	{ 
+		free(packet->answer_list[i]->name);
+		free(packet->answer_list[i]->rdata);
+		free(packet->answer_list[i]);
+	}
+	free(packet);
 
 }
 
