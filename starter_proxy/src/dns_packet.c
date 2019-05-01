@@ -342,34 +342,10 @@ char* get_ip(char* msg, int index)
 }
 
 
-// int main()
-// {
-
-// 	dns_packet_t* packet = create_dns_packet(12, RESPONSE_MASK, 0, 2, 2, 0);
-// 	add_dns_question(packet, "domain.com", 1, 1, 0);	
-// 	add_dns_question(packet, "domain.com", 1, 1, 1);
-// 	char ip[4];
-// 	ip[0] = 1;
-// 	ip[1] = 2;
-// 	ip[2] = 3;
-// 	ip[3] = 4;
-// 	add_dns_answer(packet, "domain.commmmm", 1,1,0,4,ip,0);
-// 	add_dns_answer(packet, "domain.commmmm", 1,1,0,4,ip,1);
-
-// 	char* buf = create_dns_packet_buf(packet);
-// 	int qdcount = get_qdcount(buf);
-// 	int ancount = get_ancount(buf);
-// 	int qrcode = get_qrcode(buf);
-// 	printf("Qdcount: %d ancount: %d qrcode: %d\n", qdcount, ancount, qrcode);
-// 	char* domain = get_domain(buf, 1);
-// 	printf("Domain: %s\n", domain);
-// 	int answer_offset = get_answer_offset(buf);
-// 	uint16_t identifier = get_identifier(buf);
-// 	printf("identifier: %d\n", identifier);
-// 	printf("%d\n", answer_offset);
-// 	char* getIp = get_ip(buf, 1);
-// 	printf("%d\n", getIp[2]);
-// }
+void free_packet(dns_packet_t* packet)
+{
+	
+}
 
 
 
