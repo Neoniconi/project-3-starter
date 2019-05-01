@@ -13,11 +13,12 @@
 ********************************************************/
 #include "proxy.h"
 #include "dns_packet.h"
+#include "mydns.h"
 
 
 
 static double alpha;
-static int dns_socket;
+
 /*
  *  @REQUIRES:
  *  client_fd: The fd of the client you want to add
@@ -436,62 +437,6 @@ int process_client_read(client **clients, size_t i, int data_available, fd_set *
 
 }
 
-int init_mydns(const char *dns_ip, unsigned int dns_port)
-{
-    struct sockaddr_in servaddr;
-    bzero(&servaddr, sizeof(servaddr)); 
-    servaddr.sin_addr.s_addr = inet_addr(dns_ip); 
-    servaddr.sin_port = htons(dns_port); 
-    servaddr.sin_family = AF_INET; 
-
-    dns_socket = socket(AF_INET, SOCK_DGRAM, 0);
-
-    if(connect(dns_socket, (struct sockaddr *)&servaddr, 
-        sizeof(servaddr)) < 0)
-    {
-        return -1;
-    }
-    return 0;
-
-}
-
-int resolve(const char *node, const char *service, 
-            const struct addrinfo *hints, struct addrinfo **res)
-{
-    uint16_t identifier = rand()%MAX_16_UINT;
-    uint16_t qrcount = 1;
-    uint16_t ancount = 0;
-    dns_packet_t* packet = create_dns_packet(identifier
-                        , QUERY_MASK, AA_QUERY_MASK
-                        , qrcount, ancount, RCODE_NO_ERROR);
-    add_dns_question(packet, (char*)node, QTYPE_A, QCLASS_IP, 0);
-    char* buf = create_dns_packet_buf(packet);
-    sendto(dns_socket, buf, get_pkt_len(packet), 0, (struct sockaddr*)NULL, sizeof(struct sockaddr_in)); 
-
-    char buffer[DNS_PACKET_SZ];
-    recvfrom(dns_socket, buffer, sizeof(buffer), 0, (struct sockaddr*)NULL, NULL);
-    ancount = get_ancount(buffer);
-    if(ancount == 0)
-    {
-        return -1;
-    }
-    int i;
-    char* ip;
-
-    ip = get_ip(buffer, 0);
-    *res = (struct addrinfo*)malloc(sizeof(struct addrinfo));
-    (*res)->ai_socktype = SOCK_DGRAM;
-    (*res)->ai_protocol = IPPROTO_UDP;
-    (*res)->ai_family = PF_INET;
-    (*res)->ai_addr = malloc(sizeof(struct sockaddr));
-    (*res)->ai_addr->sa_family = AF_INET;
-    unsigned short port = htons(atoi(service));
-    memcpy((*res)->ai_addr->sa_data, &port, 2);
-    memcpy((*res)->ai_addr->sa_data+2, ip, 4);
-
-    return 0;
-
-}
 
 
 int start_proxying(unsigned short listen_port, char* server_ip, char *my_ip) {
@@ -504,29 +449,8 @@ int start_proxying(unsigned short listen_port, char* server_ip, char *my_ip) {
     client **clients;
     size_t i;
 
-
     unsigned short server_port = 8080;
     const char* server_port_char = "8080";
-
-    //for testing
-
-    // char ans_ip[IP_LENGTH];
-
-    // struct addrinfo* res;
-    // resolve(DEFAULT_DOMAIN_NAME, server_port_char, NULL, &res);
-    // printf("after resolve\n");
-    
-    // struct sockaddr_in* server_addr;
-    // server_addr = (struct sockaddr_in *)(res->ai_addr);
-    // printf("after addr\n");
-    // inet_ntop(AF_INET, &(server_addr->sin_addr), ans_ip, INET_ADDRSTRLEN);
-
-    // printf("%s\n", ans_ip);
-
-
-    /////////////////
-
-
 
     if ((listen_fd = open_listen_socket(listen_port)) < 0) {
         fprintf(stderr, "start_proxy: Failed to start listening\n");
@@ -580,6 +504,8 @@ int start_proxying(unsigned short listen_port, char* server_ip, char *my_ip) {
                         server_addr = (struct sockaddr_in *)(res->ai_addr);
                         
                         inet_ntop(AF_INET, &(server_addr->sin_addr), ans_ip, INET_ADDRSTRLEN);
+
+                        printf("%s\n", ans_ip);
 
                         sibling_fd = open_socket_to_server(my_ip, ans_ip, server_port);
                     }
