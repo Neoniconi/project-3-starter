@@ -138,6 +138,8 @@ int start_nameserver(int dijkstra, char *my_ip, unsigned short listen_port,
                     send_len = strlen(servers[round]);
                     memcpy(send_buffer, servers[round], send_len);
                     round = (round+1) % servers_len;
+                    log_info("%s %s %s", 
+                            cli_ip, "query.name", hosts[index]);
                 }
                 else //Dijkstra
                 {
@@ -149,6 +151,8 @@ int start_nameserver(int dijkstra, char *my_ip, unsigned short listen_port,
                         printf("ip:%s\n", hosts[index]);
                         send_len = strlen(hosts[index]);
                         memcpy(send_buffer, hosts[index], send_len);
+                        log_info("%s %s %s", 
+                            cli_ip, "query.name", hosts[index]);
                     }
                     else
                     {
@@ -156,6 +160,7 @@ int start_nameserver(int dijkstra, char *my_ip, unsigned short listen_port,
                         send_len = n;
                         memcpy(send_buffer, recv_buffer, BUFFER_SIZE);
                     }
+
                 }
                 
 
