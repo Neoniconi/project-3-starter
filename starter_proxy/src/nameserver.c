@@ -1,10 +1,93 @@
 #include "nameserver.h"
 
+int calc_dijkstra(int G[][GRAPH_SIZE], int n, int startnode, int* servers)
+{
+ 
+	int cost[GRAPH_SIZE][GRAPH_SIZE],distance[GRAPH_SIZE],pred[GRAPH_SIZE];
+	int visited[GRAPH_SIZE],count,mindistance,nextnode,i,j, min_node, min;
+    min_node = -1;
+    min = INF;
+	
+	//pred[] stores the predecessor of each node
+	//count gives the number of nodes seen so far
+	//create the cost matrix
+	for(i=0;i<n;i++)
+    {
+        for(j=0;j<n;j++)
+        {
+            if(G[i][j]==0)
+				cost[i][j]=INF;
+			else
+				cost[i][j]=G[i][j];
+        }
+    }
+		
+	
+	//initialize pred[],distance[] and visited[]
+	for(i=0;i<n;i++)
+	{
+		distance[i]=cost[startnode][i];
+		pred[i]=startnode;
+		visited[i]=0;
+	}
+	
+	distance[startnode]=0;
+	visited[startnode]=1;
+	count=1;
+	
+	while(count<n-1)
+	{
+		mindistance=INF;
+		
+		//nextnode gives the node at minimum distance
+		for(i=0;i<n;i++)
+        {
+            if(distance[i]<mindistance&&!visited[i])
+			{
+				mindistance=distance[i];
+				nextnode=i;
+			}
+        }
+			
+			
+			//check if a better path exists through nextnode			
+			visited[nextnode]=1;
+			for(i=0;i<n;i++)
+            {
+                if(!visited[i])
+					if(mindistance+cost[nextnode][i]<distance[i])
+					{
+						distance[i]=mindistance+cost[nextnode][i];
+						pred[i]=nextnode;
+					}
+            }
+				
+		count++;
+	}
+ 
+	//print the path and distance of each node
+	for(i=0;i<n;i++)
+    {
+        if(i!=startnode)
+		{
+			// printf("\nDistance of node%d=%d",i,distance[i]);
+			// printf("\nPath=%d",i);
+			
+			if(servers[i] && distance[i]<min)
+            {
+                min = distance[i];
+                min_node = i;
+            }
+	    }
+    }
+    return min_node;
+}
+
 
 int start_nameserver(int dijkstra, char *my_ip, unsigned short listen_port, 
             char** servers, int servers_len, int lsa_graph[][GRAPH_SIZE], int hosts_len, char** hosts) 
 {
-    int max_fd, nready, listen_fd, len;
+    int max_fd, nready, listen_fd, len, i, index;
     fd_set read_set, read_ready_set;
     struct sockaddr_in serv_addr, cli_addr;
     socklen_t cli_size;
@@ -14,6 +97,16 @@ int start_nameserver(int dijkstra, char *my_ip, unsigned short listen_port,
 
     char recv_buffer[BUFFER_SIZE];
     char send_buffer[BUFFER_SIZE];
+
+    int index_is_servers[GRAPH_SIZE];
+    for(i = 0; i<servers_len; i++)
+    {
+        if((index = find_host(hosts, hosts_len, servers[i])) != -1)
+        {
+            printf("%s is server\n", hosts[index]);
+            index_is_servers[index] = 1;
+        }
+    }
 
     if ((listen_fd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
         fprintf(stderr, "start_nameserver: Failed to create socket\n");
@@ -68,14 +161,17 @@ int start_nameserver(int dijkstra, char *my_ip, unsigned short listen_port,
                     if((host_index = find_host(hosts, hosts_len, cli_ip)) != -1)
                     {
                         printf("%s:%d\n", cli_ip, host_index);
+                        index = calc_dijkstra(lsa_graph, hosts_len, host_index, index_is_servers);
+                        printf("ip:%s\n", hosts[index]);
+                        send_len = strlen(hosts[index]);
+                        memcpy(send_buffer, hosts[index], send_len);
                     }
                     else
                     {
                         printf("%s not found\n", cli_ip);
+                        send_len = n;
+                        memcpy(send_buffer, recv_buffer, BUFFER_SIZE);
                     }
-                    
-                    send_len = n;
-                    memcpy(send_buffer, recv_buffer, BUFFER_SIZE);
                 }
                 
 

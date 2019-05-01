@@ -11,7 +11,7 @@
 #include "log.h"
 
 #define BUFFER_SIZE 8192
-#define GRAPH_SIZE 1024
+#define GRAPH_SIZE 256
 #define INF 1<<30
 
 
