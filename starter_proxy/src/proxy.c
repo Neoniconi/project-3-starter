@@ -113,6 +113,15 @@ int remove_client(client **clients, size_t i, fd_set *read_set, fd_set *write_se
     return 0;
 }
 
+
+/*
+ *  @REQUIRES:
+ *  listen_fd: the given listen_fd to the socket
+ *  client: the record of all the clients
+ *  
+ *  @ENSURES: return the max fd in clients
+ *
+*/
 int find_maxfd(int listen_fd, client **clients) {
     int max_fd = listen_fd;
     int i;
@@ -126,6 +135,14 @@ int find_maxfd(int listen_fd, client **clients) {
     return max_fd;
 }
 
+/*
+ *  @REQUIRES:
+ *  bit_count: number of bitrates
+ *  bit_rate: the record of all the bitrates
+ *  
+ *  @ENSURES: accending sort the input bitrate
+ *
+*/
 void sort_bit_rate(int bit_count, int* bit_rate)
 {
     int i, j;
@@ -353,10 +370,6 @@ int process_client_read(client **clients, size_t i, int data_available, fd_set *
             if(clients[sibling_idx]->is_f4m)
             {
                 char bitrate[INIT_BUF_SIZE];
-                //todo: process f4m file
-                // clients[sibling_idx];
-                // msg_rcvd;
-                // msg_len;
                 char *offset_bitrate = memmem(msg_rcvd, msg_len, "bitrate", strlen("bitrate"));
                 char *offset_bootstrapInfoId = memmem(msg_rcvd, msg_len, "bootstrapInfoId"
                     , strlen("bootstrapInfoId"));
@@ -383,7 +396,6 @@ int process_client_read(client **clients, size_t i, int data_available, fd_set *
             char val[INIT_BUF_SIZE];
             get_header_val(msg_rcvd, msg_len, "Content-Length", strlen("Content-Length"), val);
             int content_length = atoi(val);
-            // printf("content-length:%d\n", content_length);
 
             struct timeval tv;
             gettimeofday(&tv,NULL);
@@ -414,19 +426,12 @@ int process_client_read(client **clients, size_t i, int data_available, fd_set *
             if(clients[sibling_idx]->count_res != clients[sibling_idx]->count_req 
                 && memmem(contentType, CONTENT_BUFFER_SIZE, "video", strlen("video")))
             {
-                // printf("log!");
-                // printf("brate:%d,", clients[sibling_idx]->bitrate_queue[clients[sibling_idx]->count_res]);
-                // printf("chunk name:%s\n", clients[sibling_idx]->chunkname_queue[clients[sibling_idx]->count_res]);
                 log_info("%lf %d %d %d %s %s", 
                     sec, throughput, clients[sibling_idx]->throughput, 
                     clients[sibling_idx]->bitrate_queue[clients[sibling_idx]->count_res], clientip, 
                     clients[sibling_idx]->chunkname_queue[clients[sibling_idx]->count_res]);
                 clients[sibling_idx]->count_res = (clients[sibling_idx]->count_res + 1) % CHUNK_NAME_BUF;
-                // printf("log writen\n");
             }
-
-            // printf("sec:%lf,this_throughput:%d, new_throughput:%d\n", 
-            //         sec, throughput, clients[sibling_idx]->throughput);
         }
         
         int bytes_queued = queue_message_send(clients, sibling_idx, msg_rcvd, msg_len);
@@ -457,9 +462,6 @@ int start_proxying(unsigned short listen_port, char* server_ip, char *my_ip) {
         return -1;
     }
 
-
-    // init_multiplexer(listen_fd, clients, read_set, write_set);
-
     clients = calloc(MAX_CLIENTS - 1, sizeof(client*));
     FD_ZERO(&read_set);
     FD_ZERO(&write_set);
@@ -470,7 +472,6 @@ int start_proxying(unsigned short listen_port, char* server_ip, char *my_ip) {
     while (1) {
         read_ready_set = read_set;
         write_ready_set = write_set;
-        // printf("Watining to select...\n");
         nready = select(max_fd+1, &read_ready_set, &write_ready_set, NULL, NULL);
 
         if (nready > 0) {

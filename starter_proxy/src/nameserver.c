@@ -69,6 +69,14 @@ int calc_dijkstra(int graph[][GRAPH_SIZE], int n, int start, int* servers)
     return min_node;
 }
 
+/*
+ *  @REQUIRES:
+ *  ip: the ip in string format
+ *  ans: the return ip in 4 byte format
+ * 
+ *  @ENSURES: returns 1 on success
+ *
+*/
 int ip_to_answer_format(char* ip, char* ans)
 {
     int i,j,index;
@@ -87,6 +95,28 @@ int ip_to_answer_format(char* ip, char* ans)
     memcpy(buf, ip+j, i-j);
     ans[index] = atoi(buf);
     return 1;
+}
+
+/*
+ *  @REQUIRES:
+ *  hosts: Existing hosts
+ *  hosts_len: The number of existing hosts
+ *  host: New hosts
+ *  
+ *  @ENSURES: returns index if exist, -1 if not
+ *
+*/
+int find_host(char** hosts, int hosts_len, char* host)
+{
+    int i;
+    for(i=0; i<hosts_len; i++)
+    {
+        if(strcmp(hosts[i], host) == 0)
+        {
+            return i;
+        }
+    }
+    return -1;
 }
 
 
@@ -222,28 +252,6 @@ int start_nameserver(int rr, char *my_ip, unsigned short listen_port,
     }
     
 
-}
-
-/*
- *  @REQUIRES:
- *  hosts: Existing hosts
- *  hosts_len: The number of existing hosts
- *  host: New hosts
- *  
- *  @ENSURES: returns index if exist, -1 if not
- *
-*/
-int find_host(char** hosts, int hosts_len, char* host)
-{
-    int i;
-    for(i=0; i<hosts_len; i++)
-    {
-        if(strcmp(hosts[i], host) == 0)
-        {
-            return i;
-        }
-    }
-    return -1;
 }
 
 int main(int argc, char *argv[]) {
