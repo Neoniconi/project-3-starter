@@ -90,7 +90,7 @@ int ip_to_answer_format(char* ip, char* ans)
 }
 
 
-int start_nameserver(int dijkstra, char *my_ip, unsigned short listen_port, 
+int start_nameserver(int rr, char *my_ip, unsigned short listen_port, 
             char** servers, int servers_len, int lsa_graph[][GRAPH_SIZE], int hosts_len, char** hosts) 
 {
     int max_fd, nready, listen_fd, len, i, index;
@@ -159,7 +159,7 @@ int start_nameserver(int dijkstra, char *my_ip, unsigned short listen_port,
                 char answer_ip[SIZE_32];
                 memset(answer_ip, 0, SIZE_32);
 
-                if(!dijkstra)
+                if(rr)
                 {
                     ip_to_answer_format(servers[round], answer_ip);
                     dns_packet_t* packet = create_dns_packet(identifier, 
