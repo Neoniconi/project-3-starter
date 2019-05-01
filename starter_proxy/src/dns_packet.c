@@ -102,10 +102,12 @@ query_t* create_dns_question(char* name, uint16_t q_type, uint16_t q_class)
 void set_dns_question(char* msg, query_t* query)
 {
 	uint16_t tmp;
-	int index;
-	memcpy(msg, query->q_name, strlen(query->q_name));
-	index+= strlen(query->q_name);
+	int index = 0;
+	memcpy(msg, query->q_name, strlen(query->q_name)+1);
+	printf("String length: %lu\n", strlen(query->q_name));
+	index+= strlen(query->q_name)+1;
 	tmp = htons(query->q_type);
+	printf("*************		Index: %d\n", index);
 	memcpy(msg+index, &tmp, SIZE_16);
 	index+=SIZE_16;
 	tmp = htons(query->q_class);
@@ -113,7 +115,7 @@ void set_dns_question(char* msg, query_t* query)
 }
 
 answer_t* create_dns_answer(char* name, uint16_t a_type, uint16_t a_class, 
-				uint16_t ttl, uint16_t length, char* data)
+				uint32_t ttl, uint16_t length, char* data)
 {
 	answer_t* a = malloc(sizeof(answer_t));
 	uint16_t rr_name = DEFAULT_RR_NAME;
@@ -133,23 +135,26 @@ answer_t* create_dns_answer(char* name, uint16_t a_type, uint16_t a_class,
 void set_dns_answer(char* msg, answer_t* answer)
 {
 	uint16_t tmp;
+	uint32_t tmp32;
 	int index = 0;
 	memcpy(&tmp, answer->name, SIZE_16);
 	// printf("TMP: %x\n", tmp);
 	tmp = htons(tmp);
 	memcpy(msg, &tmp, SIZE_16);
-	index+=strlen(answer->name);
+
+	index+=SIZE_16;
 	tmp = htons(answer->type);
 	memcpy(msg+index, &tmp, SIZE_16);
 	index+=SIZE_16;
 	tmp = htons(answer->class_name);
 	memcpy(msg+index, &tmp, SIZE_16);
 	index+=SIZE_16;
-	tmp = htons(answer->ttl);
-	memcpy(msg+index, &tmp, SIZE_16);
-	index+=SIZE_16;
+	tmp32 = htonl(answer->ttl);
+	memcpy(msg+index, &tmp32, SIZE_32);
+	index+=SIZE_32;
 	tmp = htons(answer->rdlength);
 	memcpy(msg+index, &tmp, SIZE_16);
+	printf("INDEX ANSWER: %d\n", index);
 	index+=SIZE_16;
 	memcpy(msg+index, answer->rdata, answer->rdlength);
 }
@@ -183,7 +188,7 @@ void add_dns_question(dns_packet_t* packet, char* name
 }
 
 void add_dns_answer(dns_packet_t* packet, char* name, uint16_t a_type, uint16_t a_class, 
-				uint16_t ttl,uint16_t length, char* data,  uint16_t index)
+				uint32_t ttl,uint16_t length, char* data,  uint16_t index)
 {
 	if(index < packet->header.an_count)
 		packet->answer_list[index] = create_dns_answer(name, a_type, a_class, ttl, length, data);
@@ -191,6 +196,7 @@ void add_dns_answer(dns_packet_t* packet, char* name, uint16_t a_type, uint16_t 
 
 char* create_dns_packet_buf(dns_packet_t* packet)
 {
+	printf("*******create_dns_packet_buf***********************\n");
 	int i;
 	int index = 0;
 	int data_len = get_pkt_len(packet);
@@ -202,12 +208,14 @@ char* create_dns_packet_buf(dns_packet_t* packet)
 	for(i=0;i<packet->header.qd_count;i++)
 	{
 		set_dns_question(msg+index, packet->query_list[i]);
-		index += strlen(packet->query_list[i]->q_name) + 2*SIZE_16;
+		printf("Query header: %s\n", packet->query_list[i]->q_name);
+		index += strlen(packet->query_list[i]->q_name)+1 + 2*SIZE_16;
 	}
 	for(i=0;i<packet->header.an_count;i++)
 	{
+		printf("Set answer index: %d\n", index);
 		set_dns_answer(msg+index, packet->answer_list[i]);
-		index += strlen(packet->answer_list[i]->name) + 4*SIZE_16
+		index += strlen(packet->answer_list[i]->name) + 3*SIZE_16 + SIZE_32
 		+ packet->answer_list[i]->rdlength;
 	}
 	return msg;
@@ -220,11 +228,11 @@ int get_pkt_len(dns_packet_t* packet)
 	int index = 0;
 	for(i=0;i<packet->header.qd_count;i++)
 	{
-		data_len += strlen(packet->query_list[i]->q_name) + 2*SIZE_16;
+		data_len += strlen(packet->query_list[i]->q_name)+1+2*SIZE_16;
 	}
 	for(i=0;i<packet->header.an_count;i++)
-	{
-		data_len += SIZE_16 + 4*SIZE_16
+	{ 
+		data_len += SIZE_16 + 3*SIZE_16 + SIZE_32
 		+ packet->answer_list[i]->rdlength;
 	}
 	data_len += HEADER_LEN;

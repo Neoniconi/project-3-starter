@@ -88,7 +88,7 @@ typedef struct
 	char* name;
 	uint16_t type;			//2byte
 	uint16_t class_name;	//2byte
-	uint16_t ttl;			//2byte
+	uint32_t ttl;			//4byte
 	uint16_t rdlength;		//2byte
 	char* rdata;			
 
@@ -105,7 +105,7 @@ typedef struct
 
 query_t* create_dns_question(char* name, uint16_t q_type, uint16_t q_class);
 answer_t* create_dns_answer(char* name, uint16_t a_type, uint16_t a_class, 
-				uint16_t ttl, uint16_t length, char* data);
+				uint32_t ttl, uint16_t length, char* data);
 dns_packet_t* create_dns_packet(uint16_t identifier, uint16_t qr
 					, uint16_t aa, uint16_t qd_count
 					, uint16_t an_count, uint16_t rcode);
@@ -113,7 +113,7 @@ dns_packet_t* create_dns_packet(uint16_t identifier, uint16_t qr
 void add_dns_question(dns_packet_t* packet, char* name
 					, uint16_t q_type, uint16_t q_class, uint16_t index);
 void add_dns_answer(dns_packet_t* packet, char* name, uint16_t a_type, uint16_t a_class, 
-				uint16_t ttl,uint16_t length, char* data,  uint16_t index);
+				uint32_t ttl,uint16_t length, char* data,  uint16_t index);
 
 char* create_dns_packet_buf(dns_packet_t* packet);
 
