@@ -73,7 +73,6 @@ int ip_to_answer_format(char* ip, char* ans)
 {
     int i,j,index;
     char buf[SIZE_32];
-    memset(buf, 0, SIZE_32);
     index = 0;
     for(i=0, j=0; ip[i]!=0; i++)
     {
@@ -184,20 +183,15 @@ int start_nameserver(int rr, char *my_ip, unsigned short listen_port,
                     int host_index;
                     if((host_index = find_host(hosts, hosts_len, cli_ip)) != -1)
                     {
-                        // printf("%s:%d\n", cli_ip, host_index);
+                        printf("%s:%d\n", cli_ip, host_index);
                         index = calc_dijkstra(lsa_graph, hosts_len, host_index, index_is_servers);
-                        // printf("ip:%s\n", hosts[index]);
+                        printf("ip:%s\n", hosts[index]);
                         send_len = strlen(hosts[index]);
                         memcpy(send_buffer, hosts[index], send_len);
                         log_info("%s %s %s", 
                             cli_ip, domain_name, hosts[index]);
 
-                        int i;
-                        for(i=0;i<4;i++)
-                        {
-                            printf("%d", answer_ip[i]);
-                        }
-                        printf("\n");
+
                         ip_to_answer_format(hosts[index], answer_ip);
                         dns_packet_t* packet = create_dns_packet(identifier, 
                             RESPONSE_MASK, AA_RESPONSE_MASK, qdcount, 1, RCODE_NO_ERROR);

@@ -13,9 +13,7 @@
 #define MAX_CLIENTS FD_SETSIZE
 #define MAX_RATE_NUM 100
 
-#define MAX_16_UINT 0xffff
 #define DEFAULT_DOMAIN_NAME "video.cs.cmu.edu"
-#define MAX_ANS 5
 
 struct client_struct
 {

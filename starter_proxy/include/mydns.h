@@ -1,4 +1,6 @@
 #include <netdb.h>
+#include "dns_packet.h"
+#define MAX_16_UINT 0xffff
 
 /**
  * Initialize your client DNS library with the IP address and port number of
