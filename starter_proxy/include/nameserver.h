@@ -9,6 +9,7 @@
 #include <arpa/inet.h> 
 
 #include "log.h"
+#include "dns_packet.h"
 
 #define BUFFER_SIZE 8192
 #define GRAPH_SIZE 256
