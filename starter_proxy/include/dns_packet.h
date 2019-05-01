@@ -124,13 +124,14 @@ uint16_t get_qdcount(char* msg);
 uint16_t get_ancount(char* msg);
 uint16_t get_qrcode(char* msg);
 uint16_t get_answer_offset(char* msg);
+uint16_t get_identifier(char* msg);
 
 char* get_domain(char* msg, uint16_t index);
 char* get_ip(char* msg, int index);
 
 void free_packet(dns_packet_t* packet);
 
-// char* str_to_dnsname(char* domain);
+char* str_to_dnsname(char* domain)；
 
 #endif
 

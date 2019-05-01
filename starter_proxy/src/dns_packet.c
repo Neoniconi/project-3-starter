@@ -1,4 +1,97 @@
-#include "dns_packet.h"
+// #include "dns_packet.h"
+
+#include <netinet/in.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <stdint.h>
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <semaphore.h>
+
+#define SIZE_32 4
+#define SIZE_16 2
+#define SIZE_8 1
+
+#define DNS_PACKET_SZ 512
+
+#define QUERY_MASK 0x0
+#define RESPONSE_MASK 0x8000
+#define OPCODE_STANDARD_MASK 0x0
+#define AA_QUERY_MASK 0x0
+#define AA_RESPONSE_MASK 0x400
+#define TC_FALSE_MASK 0x0
+#define RD_FALSE_MASK 0x0
+#define RA_FALSE_MASK 0x0
+#define RESERVED_Z_MASK 0x0
+
+#define NS_COUNT_DEFAULT 0x0
+#define AR_COUNT_DEFAULT 0x0
+
+#define DOMAIN_SEPERATOR "."
+
+#define QTYPE_A 1
+#define QCLASS_IP 1
+
+#define ATYPE_A 1
+#define ACLASS_IP 1
+
+#define TTL_DEFAULT 0
+
+/* Response code */
+#define RCODE_NO_ERROR 0x0
+#define RCODE_FORMAT_ERROR 0x1
+#define RCODE_SERVER_FAILURE 0x2
+#define RCODE_NAME_ERROR 0x3
+#define RCODE_NOT_IMPLEMENTED 0x4
+#define RCODE_REFUSED 0x5
+
+
+#define HEADER_LEN 12
+#define MAX_DOMAIN_LEN 256
+
+
+
+typedef struct 
+{
+	uint16_t identifier;	//2byte
+	uint16_t flags;			//2byte
+	uint16_t qd_count;		//2byte
+	uint16_t an_count;		//2byte
+	uint16_t ns_count;		//2byte
+	uint16_t ar_count;		//2byte
+} dns_header_t;
+
+typedef struct 
+{
+	char* q_name;		//2byte
+	uint16_t q_type;		//2bype
+	uint16_t q_class;		//2byte
+	
+}query_t;
+
+typedef struct 
+{
+	char* name;
+	uint16_t type;
+	uint16_t class_name;
+	uint16_t ttl;
+	uint16_t rdlength;
+	char* rdata;
+
+}answer_t;
+
+typedef struct 
+{
+	dns_header_t header;
+	query_t** query_list;
+	answer_t** answer_list;
+	// char* data;
+}dns_packet_t;
+
 
 /*
  * Param: identifier - A 16 bit identifier assigned by the program that
@@ -239,8 +332,15 @@ uint16_t get_qrcode(char* msg)
 	uint16_t var;
 	memcpy(&var, msg+offset, SIZE_16);
 	uint16_t flag = ntohs(var);
-	return (RESPONSE_MASK & flag)==0;
+	return (RESPONSE_MASK & flag)!=0;
 
+}
+uint16_t get_identifier(char* msg)
+{
+	int offset = 0;
+	uint16_t var;
+	memcpy(&var, msg, SIZE_16);
+	return ntohs(var);
 }
 
 char* get_domain(char* msg, uint16_t index)
@@ -329,7 +429,7 @@ char* get_ip(char* msg, int index)
 // int main()
 // {
 
-// 	dns_packet_t* packet = create_dns_packet(0, 0, 0, 2, 2, 0);
+// 	dns_packet_t* packet = create_dns_packet(12, RESPONSE_MASK, 0, 2, 2, 0);
 // 	add_dns_question(packet, "domain.com", 1, 1, 0);	
 // 	add_dns_question(packet, "domain.com", 1, 1, 1);
 // 	char ip[4];
@@ -343,10 +443,13 @@ char* get_ip(char* msg, int index)
 // 	char* buf = create_dns_packet_buf(packet);
 // 	int qdcount = get_qdcount(buf);
 // 	int ancount = get_ancount(buf);
-// 	printf("Qdcount: %d ancount: %d\n", qdcount, ancount);
+// 	int qrcode = get_qrcode(buf);
+// 	printf("Qdcount: %d ancount: %d qrcode: %d\n", qdcount, ancount, qrcode);
 // 	char* domain = get_domain(buf, 1);
 // 	printf("Domain: %s\n", domain);
 // 	int answer_offset = get_answer_offset(buf);
+// 	uint16_t identifier = get_identifier(buf);
+// 	printf("identifier: %d\n", identifier);
 // 	printf("%d\n", answer_offset);
 // 	char* getIp = get_ip(buf, 1);
 // 	printf("%d\n", getIp[2]);
