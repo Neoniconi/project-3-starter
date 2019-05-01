@@ -166,7 +166,6 @@ int start_nameserver(int rr, char *my_ip, unsigned short listen_port,
     printf("Initiating select loop\n");
     while (1) {
         read_ready_set = read_set;
-        // printf("Watining to select...\n");
         nready = select(max_fd+1, &read_ready_set, NULL, NULL, NULL);
 
         if (nready > 0) {
@@ -202,8 +201,6 @@ int start_nameserver(int rr, char *my_ip, unsigned short listen_port,
                     memcpy(send_buffer, buf, send_len);
                     free(buf);
 
-                    // send_len = strlen(servers[round]);
-                    // memcpy(send_buffer, servers[round], send_len);
                     log_info("%s %s %s", 
                             cli_ip, domain_name, servers[round]);
                     round = (round+1) % servers_len;
@@ -213,9 +210,7 @@ int start_nameserver(int rr, char *my_ip, unsigned short listen_port,
                     int host_index;
                     if((host_index = find_host(hosts, hosts_len, cli_ip)) != -1)
                     {
-                        printf("%s:%d\n", cli_ip, host_index);
                         index = calc_dijkstra(lsa_graph, hosts_len, host_index, index_is_servers);
-                        printf("ip:%s\n", hosts[index]);
                         send_len = strlen(hosts[index]);
                         memcpy(send_buffer, hosts[index], send_len);
                         log_info("%s %s %s", 
@@ -396,14 +391,6 @@ int main(int argc, char *argv[]) {
                 }
             }
         }
-        // for(i=0;i<host_count;i++)
-        // {
-        //     for(j=0;j<host_count;j++)
-        //     {
-        //         printf("%02d ", graph[i][j]%10);
-        //     }
-        //     printf("\n");
-        // }
 
         start_nameserver(offset, argv[2+offset], listen_port, 
                 servers, servers_count, graph, host_count, hosts);
