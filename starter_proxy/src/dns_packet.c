@@ -326,7 +326,8 @@ char* get_ip(char* msg, int index)
 		while(current<=index)
 		{
 			offset += SIZE_16;
-			offset += 4*SIZE_16;
+			offset += 3*SIZE_16;
+			offset += SIZE_32;
 			if(current == index)
 			{
 				memcpy(ip, msg+offset, 4);
@@ -344,7 +345,7 @@ char* get_ip(char* msg, int index)
 
 void free_packet(dns_packet_t* packet)
 {
-	
+
 }
 
 
