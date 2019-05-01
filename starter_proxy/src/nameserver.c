@@ -1,84 +1,70 @@
 #include "nameserver.h"
 
-int calc_dijkstra(int G[][GRAPH_SIZE], int n, int startnode, int* servers)
+/*
+ *  @REQUIRES:
+ *  graph: the distance between hosts
+ *  n: the length of hosts
+ *  start: the index of client in hosts
+ *  servers: the index of servers in hosts
+ * 
+ *  @ENSURES: returns the index of target server
+ *
+*/
+int calc_dijkstra(int graph[][GRAPH_SIZE], int n, int start, int* servers)
 {
- 
-	int cost[GRAPH_SIZE][GRAPH_SIZE],distance[GRAPH_SIZE],pred[GRAPH_SIZE];
-	int visited[GRAPH_SIZE],count,mindistance,nextnode,i,j, min_node, min;
+	int distance[GRAPH_SIZE];
+	int visited[GRAPH_SIZE];
+    int count,mindistance,nextnode,i,j, min_node, min;
     min_node = -1;
     min = INF;
-	
-	//pred[] stores the predecessor of each node
-	//count gives the number of nodes seen so far
-	//create the cost matrix
-	for(i=0;i<n;i++)
-    {
-        for(j=0;j<n;j++)
-        {
-            if(G[i][j]==0)
-				cost[i][j]=INF;
-			else
-				cost[i][j]=G[i][j];
-        }
-    }
 		
 	
-	//initialize pred[],distance[] and visited[]
+	//init
 	for(i=0;i<n;i++)
 	{
-		distance[i]=cost[startnode][i];
-		pred[i]=startnode;
-		visited[i]=0;
+		distance[i] = graph[start][i];
+		visited[i] = 0;
 	}
 	
-	distance[startnode]=0;
-	visited[startnode]=1;
-	count=1;
+	distance[start] = 0;
+	visited[start] = 1;
 	
-	while(count<n-1)
+	for(count=1; count<n-1; count++)
 	{
-		mindistance=INF;
+		mindistance = INF;
 		
-		//nextnode gives the node at minimum distance
+		//best next node
 		for(i=0;i<n;i++)
         {
-            if(distance[i]<mindistance&&!visited[i])
+            if(distance[i]<mindistance && !visited[i])
 			{
-				mindistance=distance[i];
-				nextnode=i;
+				mindistance = distance[i];
+				nextnode = i;
 			}
         }
 			
 			
-			//check if a better path exists through nextnode			
-			visited[nextnode]=1;
-			for(i=0;i<n;i++)
-            {
-                if(!visited[i])
-					if(mindistance+cost[nextnode][i]<distance[i])
-					{
-						distance[i]=mindistance+cost[nextnode][i];
-						pred[i]=nextnode;
-					}
-            }
-				
-		count++;
+        //check if better path for nxt node
+        visited[nextnode] = 1;
+        for(i=0;i<n;i++)
+        {
+            if(!visited[i])
+                if(mindistance + graph[nextnode][i]<distance[i])
+                {
+                    distance[i] = mindistance + graph[nextnode][i];
+                }
+        }
+
 	}
  
-	//print the path and distance of each node
+	//find the server with minimum distance
 	for(i=0;i<n;i++)
     {
-        if(i!=startnode)
-		{
-			// printf("\nDistance of node%d=%d",i,distance[i]);
-			// printf("\nPath=%d",i);
-			
-			if(servers[i] && distance[i]<min)
-            {
-                min = distance[i];
-                min_node = i;
-            }
-	    }
+        if(servers[i] && distance[i]<min && i!=start)
+        {
+            min = distance[i];
+            min_node = i;
+        }
     }
     return min_node;
 }
@@ -103,7 +89,6 @@ int start_nameserver(int dijkstra, char *my_ip, unsigned short listen_port,
     {
         if((index = find_host(hosts, hosts_len, servers[i])) != -1)
         {
-            printf("%s is server\n", hosts[index]);
             index_is_servers[index] = 1;
         }
     }
@@ -147,7 +132,6 @@ int start_nameserver(int dijkstra, char *my_ip, unsigned short listen_port,
                 int n = recvfrom(listen_fd, recv_buffer, sizeof(recv_buffer), 
                         0, (struct sockaddr*)&cli_addr, &cli_size); //receive message from server
                 
-                // printf("%s\n",inet_ntoa(cli_addr.sin_addr));
                 char *cli_ip = inet_ntoa(cli_addr.sin_addr);
                 if(!dijkstra)
                 {
@@ -249,7 +233,6 @@ int main(int argc, char *argv[]) {
         {
             servers[servers_count] = malloc(strlen(line)+1);
             memcpy(servers[servers_count], line, strlen(line)-1);//strip \n at the end
-            // printf("%s\n",servers[servers_count]);
             servers_count++;
         }
         fclose(servers_fp);
@@ -324,9 +307,8 @@ int main(int argc, char *argv[]) {
                 }
 
                 graph[host_index][neighbor_index] = 1;
-                graph[host_index][host_index] = 0;//the distance to itself is 0
                 record[neighbor_index] = 1;
-                record[host_index] = 1;
+
                 for(i=0; i<host_count; i++)//set all the not-updated distance to INF
                 {
                     if(record[i] == 0)
