@@ -2,7 +2,9 @@
 *  Author: Jingze Shi, Yiting Wang                     *
 *  Email: jingzes@cmu.edu yitingw@cmu.edu              *
 *  Description: This code defines the DNS packet       *
-*               header                                 *
+*               .Review DNS protocol format for        *
+*				more information.                      *
+*  			    https://tools.ietf.org/html/rfc1035    *
 ********************************************************/
 
 #ifndef _DNS_PACKET_H
